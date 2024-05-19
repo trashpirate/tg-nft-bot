@@ -54,17 +54,20 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    address = update.message.text
-    if len(address) == 42 and address[:2] == "0x":
-        reflect = getReflections(address)
-        balance = getBalance(address)
-        text = f"{balance}\n{reflect}"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    if context.args and len(context.args) == 1:
+        address = context.args[0]
+        if len(address) == 42 and address[:2] == "0x":
+            reflect = getReflections(address)
+            balance = getBalance(address)
+            text = f"{balance}\n{reflect}"
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Please enter a valid wallet address.",
+            )
     else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Please enter a valid wallet address.",
-        )
+        return
 
 
 async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,7 +108,7 @@ def main() -> None:
 
     # define handlers
     start_handler = CommandHandler("start", start)
-    reflections_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), reflections)
+    reflections_handler = CommandHandler("reflections", reflections)
     inline_reflections_handler = InlineQueryHandler(inline_reflections)
 
     # add commands
