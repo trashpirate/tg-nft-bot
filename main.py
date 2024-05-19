@@ -97,19 +97,22 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="Sorry, I didn't understand that command.",
     )
 
-
-if __name__ == "__main__":
-
+def main() -> None:
+    
+    # create bot
     application = ApplicationBuilder().token(TOKEN).build()
 
+    # define handlers
     start_handler = CommandHandler("start", start)
     reflections_handler = CommandHandler("reflections", reflections)
     inline_reflections_handler = InlineQueryHandler(inline_reflections)
 
+    # add commands
     application.add_handler(start_handler)
     application.add_handler(reflections_handler)
     application.add_handler(inline_reflections_handler)
 
+    # run bot
     if URL == "":
         application.run_polling(poll_interval=5)
     else:
@@ -119,3 +122,7 @@ if __name__ == "__main__":
             url_path=TOKEN,
             webhook_url=URL + TOKEN,
         )
+        
+if __name__ == "__main__":
+    main()
+    
