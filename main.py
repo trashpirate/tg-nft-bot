@@ -46,31 +46,38 @@ async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(address) == 42 and address[:2] == "0x":
             reflections = calcReflections(address)
             await context.bot.send_message(
-                chat_id=update.effective_chat.id, text='Your reflections: {:,.2f} EARN'.format(reflections)
+                chat_id=update.effective_chat.id, text='Reflections: {:,.2f} EARN'.format(reflections)
             )
         else:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="Please enter a valid wallet address.",
             )
-
-async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.inline_query.query
-    if not query:
+    else:
         return
 
-    reflections = calcReflections(query)
-
-    results = []
-    results.append(
-        InlineQueryResultArticle(
-            id=query,
-            title="Reflections",
-            input_message_content=InputTextMessageContent(f"{reflections} EARN"),
+async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    address = update.inline_query.query
+    if not address:
+        return
+    if len(address) == 42 and address[:2] == "0x":
+        reflections = calcReflections(address)
+        text = 'Reflections: {:,.2f} EARN'.format(reflections)
+        results = []
+        results.append(
+            InlineQueryResultArticle(
+                id=address,
+                title="Reflections",
+                input_message_content=InputTextMessageContent(text),
+            )
         )
-    )
-    await context.bot.answer_inline_query(update.inline_query.id, results)
-
+        await context.bot.answer_inline_query(update.inline_query.id, results)
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Please enter a valid wallet address.",
+        )
+        
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
