@@ -86,12 +86,10 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     reflections_handler = CommandHandler("reflections", reflections)
     inline_reflections_handler = InlineQueryHandler(inline_reflections)
-    unknown_handler = MessageHandler(filters.COMMAND, unknown)
 
     application.add_handler(start_handler)
     application.add_handler(reflections_handler)
     application.add_handler(inline_reflections_handler)
-    application.add_handler(unknown_handler)
 
     # application.run_polling(allowed_updates=Update.ALL_TYPES)
     if URL == "":
