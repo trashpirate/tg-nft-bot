@@ -45,11 +45,25 @@ def getBalance(address):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Enter wallet address to check reflections:",
-    )
-    return REFLECTIONS
+    if context.args and len(context.args) == 1:
+        address = context.args[0]
+        if len(address) == 42 and address[:2] == "0x":
+            reflect = getReflections(address)
+            balance = getBalance(address)
+            text = f"{balance}\n{reflect}"
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Please enter a valid wallet address.",
+            )
+        return ConversationHandler.END
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Enter wallet address to check reflections:",
+        )
+        return REFLECTIONS
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
