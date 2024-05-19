@@ -95,9 +95,8 @@ if __name__ == "__main__":
 
     # application.run_polling(allowed_updates=Update.ALL_TYPES)
     if URL == "":
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        application.run_polling(poll_interval=5)
     else:
-
         application.run_webhook(
             listen="0.0.0.0",
             port=int(PORT),
