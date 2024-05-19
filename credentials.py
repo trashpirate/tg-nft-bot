@@ -13,4 +13,4 @@ ALCHEMY_AUTH_TOKEN = str(os.getenv("ALCHEMY_AUTH_TOKEN"))
 ALCHEMY_API_KEY = str(os.getenv("ALCHEMY_API_KEY"))
 
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TOKEN}/"
-URL = ""  # "https://exotic-crayfish-striking.ngrok-free.app/getpost/"
+URL = str(os.getenv("URL"))  # "https://exotic-crayfish-striking.ngrok-free.app/getpost/"
