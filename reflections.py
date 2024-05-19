@@ -34,6 +34,7 @@ def getBalanceOf(address):
     json_data = response.json()
     hexBalance = json_data["result"]["tokenBalances"][0]["tokenBalance"]
     balance = Web3.from_wei(Web3.to_int(hexstr=hexBalance), "ether")
+    
     return balance
 
 
@@ -63,13 +64,13 @@ def getTransfersOut(address):
     json_data = response.json()
     transfers = json_data["result"]["transfers"]
 
-    tax = 0.98
-    if address == "0x0cf66382d52C2D6c1D095c536c16c203117E2B2f":
-        tax = 1
-
     sum = 0
     for tx in transfers:
         if tx["value"] is not None:
+            if address == "0x0cf66382d52c2d6c1d095c536c16c203117e2b2f" or tx['to'] == "0x0cf66382d52c2d6c1d095c536c16c203117e2b2f":
+                tax = 1
+            else:
+                tax = 0.98
             sum += tx["value"] / tax
 
     return sum
