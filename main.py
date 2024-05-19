@@ -41,18 +41,18 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    address = context.args[0]
-    if len(address) == 42 and address[:2] == "0x":
-        reflections = calcReflections(address)
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=f"Your reflections: {reflections} EARN"
-        )
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Please enter a valid wallet address.",
-        )
-
+    if context.args and len(context.args) == 1:
+        address = context.args[0]
+        if len(address) == 42 and address[:2] == "0x":
+            reflections = calcReflections(address)
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text='Your reflections: {:,.2f} EARN'.format(reflections)
+            )
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Please enter a valid wallet address.",
+            )
 
 async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.inline_query.query
