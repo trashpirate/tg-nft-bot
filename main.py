@@ -23,16 +23,19 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
 def getReflections(address):
-        reflections = calcReflections(address)
-        text = 'Reflections: {:,.2f} EARN'.format(reflections)
-        return text
-        
+    reflections = calcReflections(address)
+    text = "Reflections: {:,.2f} EARN".format(reflections)
+    return text
+
+
 def getBalance(address):
     balance = getBalanceOf(address)
-    text = 'Balance: {:,.2f} EARN'.format(balance)
+    text = "Balance: {:,.2f} EARN".format(balance)
     return text
-        
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!"
@@ -51,20 +54,15 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.args and len(context.args) == 1:
-        address = context.args[0]
-        if len(address) == 42 and address[:2] == "0x":
-            reflect = getReflections(address)
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text=reflect
-            )
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="Please enter a valid wallet address.",
-            )
+    address = update.message.text
+    if len(address) == 42 and address[:2] == "0x":
+        reflect = getReflections(address)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=reflect)
     else:
-        return
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Please enter a valid wallet address.",
+        )
 
 
 async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,12 +82,12 @@ async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 id=str(uuid4()),
                 title="Balance",
                 input_message_content=InputTextMessageContent(balance),
-            )
+            ),
         ]
         await context.bot.answer_inline_query(update.inline_query.id, results)
     else:
         return
-        
+
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
@@ -97,14 +95,15 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="Sorry, I didn't understand that command.",
     )
 
+
 def main() -> None:
-    
+
     # create bot
     application = ApplicationBuilder().token(TOKEN).build()
 
     # define handlers
     start_handler = CommandHandler("start", start)
-    reflections_handler = CommandHandler("reflections", reflections)
+    reflections_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), reflections)
     inline_reflections_handler = InlineQueryHandler(inline_reflections)
 
     # add commands
@@ -122,7 +121,7 @@ def main() -> None:
             url_path=TOKEN,
             webhook_url=URL + TOKEN,
         )
-        
+
+
 if __name__ == "__main__":
     main()
-    
