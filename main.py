@@ -93,14 +93,14 @@ if __name__ == "__main__":
     application.add_handler(inline_reflections_handler)
     application.add_handler(unknown_handler)
 
-    # application.run_polling(allowed_updates=Update.ALL_TYPES)
-    if URL == "":
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
-    else:
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # if URL == "":
+    #     application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # else:
 
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=int(PORT),
-            url_path=TOKEN,
-            webhook_url="app URL that you copied from Heroku + TOKEN",
-        )
+    #     application.run_webhook(
+    #         listen="0.0.0.0",
+    #         port=int(PORT),
+    #         url_path=TOKEN,
+    #         webhook_url="app URL that you copied from Heroku + TOKEN",
+    #     )
