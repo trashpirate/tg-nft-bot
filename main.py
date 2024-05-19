@@ -1,9 +1,15 @@
 import asyncio
 import logging
 from uuid import uuid4
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram import (
+    Update,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    ReplyKeyboardRemove,
+)
 from telegram.ext import (
     filters,
+    ConversationHandler,
     MessageHandler,
     ApplicationBuilder,
     CommandHandler,
@@ -23,6 +29,8 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+REFLECTIONS = range(1)
+
 
 def getReflections(address):
     reflections = calcReflections(address)
@@ -38,8 +46,10 @@ def getBalance(address):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!"
+        chat_id=update.effective_chat.id,
+        text="Enter wallet address to check reflections.",
     )
+    return REFLECTIONS
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,20 +64,18 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.args and len(context.args) == 1:
-        address = context.args[0]
-        if len(address) == 42 and address[:2] == "0x":
-            reflect = getReflections(address)
-            balance = getBalance(address)
-            text = f"{balance}\n{reflect}"
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-        else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="Please enter a valid wallet address.",
-            )
+    address = update.message.text
+    if len(address) == 42 and address[:2] == "0x":
+        reflect = getReflections(address)
+        balance = getBalance(address)
+        text = f"{balance}\n{reflect}"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
     else:
-        return
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Please enter a valid wallet address.",
+        )
+    return ConversationHandler.END
 
 
 async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,19 +109,41 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Cancels and ends the conversation."""
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    await update.message.reply_text(
+        "Use /reflections to check EARN reflections.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return ConversationHandler.END
+
+
 def main() -> None:
 
     # create bot
     application = ApplicationBuilder().token(TOKEN).build()
 
+    # conversation handlers
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("reflections", start)],
+        states={
+            REFLECTIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, reflections)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
     # define handlers
-    start_handler = CommandHandler("start", start)
-    reflections_handler = CommandHandler("reflections", reflections)
+    # start_handler = CommandHandler("start", start)
+    # reflections_handler = CommandHandler("reflections", reflections)
     inline_reflections_handler = InlineQueryHandler(inline_reflections)
 
     # add commands
-    application.add_handler(start_handler)
-    application.add_handler(reflections_handler)
+    # application.add_handler(start_handler)
+    # application.add_handler(reflections_handler)
+    application.add_handler(conv_handler)
     application.add_handler(inline_reflections_handler)
 
     # run bot
