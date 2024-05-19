@@ -2,6 +2,10 @@ from web3 import Web3
 from credentials import ALCHEMY_API_KEY, RPC_URL
 import requests
 
+BUYHOLDEARN_WALLET = Web3.to_checksum_address(
+    "0x0cf66382d52c2d6c1d095c536c16c203117e2b2f"
+)
+
 
 def calcReflections(address):
 
@@ -34,7 +38,7 @@ def getBalanceOf(address):
     json_data = response.json()
     hexBalance = json_data["result"]["tokenBalances"][0]["tokenBalance"]
     balance = Web3.from_wei(Web3.to_int(hexstr=hexBalance), "ether")
-    
+
     return balance
 
 
@@ -67,7 +71,10 @@ def getTransfersOut(address):
     sum = 0
     for tx in transfers:
         if tx["value"] is not None:
-            if address == "0x0cf66382d52c2d6c1d095c536c16c203117e2b2f" or tx['to'] == "0x0cf66382d52c2d6c1d095c536c16c203117e2b2f":
+            if (
+                Web3.to_checksum_address(address) == BUYHOLDEARN_WALLET
+                or Web3.to_checksum_address(tx["to"]) == BUYHOLDEARN_WALLET
+            ):
                 tax = 1
             else:
                 tax = 0.98
