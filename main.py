@@ -57,7 +57,9 @@ async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
     address = update.message.text
     if len(address) == 42 and address[:2] == "0x":
         reflect = getReflections(address)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=reflect)
+        balance = getBalance(address)
+        text = f"{balance}\n{reflect}"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
