@@ -47,7 +47,7 @@ def getBalance(address):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Enter wallet address to check reflections.",
+        text="Enter wallet address to check reflections:",
     )
     return REFLECTIONS
 
