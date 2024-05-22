@@ -13,7 +13,7 @@
 **Token Contract: Hold ($EARN)**  
 https://etherscan.io/address/0x0b61C4f33BCdEF83359ab97673Cb5961c6435F4E#code
 
-### ✨ [Website](https://www.buyholdearn.com)
+### ✨ [EARN Telegram](https://t.me/buyholdearn)
 
 ## Installation
 
