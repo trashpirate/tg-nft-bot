@@ -1,1 +1,1 @@
-web: uvicorn main:app --host=0.0.0.0 --port=${PORT:-5000} --lifespan=on
+web: gunicorn --workers 4 --worker-class uvicorn.workers.UvicornWorker main:app
