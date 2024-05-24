@@ -28,7 +28,10 @@ def getGraphQLQuery(contractAddress, blockFilter):
   }
   """
 
-    query = query.replace("blockFilter", blockFilter)
+    if blockFilter == "None":
+        query = query.replace("blockFilter", "")
+    else:
+        query = query.replace("blockFilter", blockFilter)
     query = query.replace("contractAddress", f'"{contractAddress}"')
 
     return query
