@@ -1,8 +1,8 @@
 import requests
-from credentials import TEST, ALCHEMY_AUTH_TOKEN
+from credentials import ALCHEMY_AUTH_TOKEN, URL
 
 
-def getGraphQLQuery(contractAddress, network, blockFilter):
+def getGraphQLQuery(contractAddress, blockFilter):
 
     query = """
     {
@@ -37,9 +37,7 @@ def getGraphQLQuery(contractAddress, network, blockFilter):
 def create_webhook(network, contract, filter):
 
     url = "https://dashboard.alchemy.com/api/create-webhook"
-    query = getGraphQLQuery(
-        contractAddress=contract, network=network, blockFilter=filter
-    )
+    query = getGraphQLQuery(contractAddress=contract, blockFilter=filter)
 
     payload = {
         "network": network,
@@ -48,7 +46,7 @@ def create_webhook(network, contract, filter):
             "query": query,
             "skip_empty_messages": True,
         },
-        "webhook_url": "https://earn-nft-bot-0c1554d0595a.herokuapp.com/nfts",
+        "webhook_url": f"{URL}/nfts",
     }
     headers = {
         "accept": "application/json",

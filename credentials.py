@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TEST = str(os.getenv("TEST"))
 TOKEN = str(os.getenv("TOKEN"))
 PORT = int(os.environ.get("PORT", 8000))
 URL = str(os.getenv("URL"))
