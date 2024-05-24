@@ -145,7 +145,7 @@ based
 # https://docs.alchemy.com/reference/custom-webhooks-quickstart
 #
 {
-  block (hash: "0x8b8cc704ac816f0b9155cba4b47480d7b7ad08f9e1180de323e9bdd787ac1d53"){
+  block (hash: "0xf5f72fa4479988b6cc1f19d43f678a56c5ec81dca551fa2fea165b588dc5505b"){
     # Block hash is a great primary key to use for your data stores!
     hash,
     number,

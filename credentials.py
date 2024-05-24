@@ -14,3 +14,4 @@ ALCHEMY_API_KEY_ETH = str(os.getenv("ALCHEMY_API_KEY_ETH"))
 ALCHEMY_API_KEY_BASE = str(os.getenv("ALCHEMY_API_KEY_BASE"))
 
 ADMIN_ID = str(os.getenv("ADMIN_ID"))
+GROUP_IDS = str(os.getenv("GROUP_IDS"))

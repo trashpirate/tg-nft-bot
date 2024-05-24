@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # create bot
 application = ApplicationBuilder().token(TOKEN).build()
 
-NETWORK, CONTRACT = range(2)
+NETWORK, CONTRACT, FILTER = range(3)
 chat_ids = []
 network_selected = ""
 contract_address = ""
@@ -114,19 +114,32 @@ async def add_network(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def add_contract(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    contract_address = update.message.text
+    contract = update.message.text
 
-    if len(contract_address) == 42 and contract_address[:2] == "0x":
-        global network_selected
-        create_webhook(network=network_selected, contract=contract_address)
+    if len(contract) == 42 and contract[:2] == "0x":
+        global contract_address
+        contract_address = contract
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Contract is added."
+            chat_id=update.effective_chat.id,
+            text="Enter a block filter (only testing):",
         )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text="Please enter a valid wallet address.",
         )
+    return FILTER
+
+
+async def add_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    filter = update.message.text
+
+    global network_selected
+    global contract_address
+    create_webhook(network=network_selected, contract=contract_address, filter=filter)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Webhook created."
+    )
     return ConversationHandler.END
 
 
@@ -188,6 +201,7 @@ async def start_app():
         states={
             NETWORK: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_network)],
             CONTRACT: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_contract)],
+            FILTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_filter)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

@@ -2,7 +2,7 @@ import requests
 from credentials import TEST, ALCHEMY_AUTH_TOKEN
 
 
-def getGraphQLQuery(contractAddress, network):
+def getGraphQLQuery(contractAddress, network, blockFilter):
 
     query = """
     {
@@ -28,26 +28,17 @@ def getGraphQLQuery(contractAddress, network):
   }
   """
 
-    if TEST == "true":
-        if network == "BASE_MAINNET":
-            filter = '(hash: "0x8b8cc704ac816f0b9155cba4b47480d7b7ad08f9e1180de323e9bdd787ac1d53")'
-        else:
-            filter = '(hash: "0xa02c605284028f62c099c8e8fb7f72f8aa27093a1ffc09b1c27e725040b1b572")'
-    else:
-        filter = ""
-
-    query = query.replace("blockFilter", filter)
+    query = query.replace("blockFilter", blockFilter)
     query = query.replace("contractAddress", f'"{contractAddress}"')
 
     return query
 
 
-def create_webhook(network, contract):
+def create_webhook(network, contract, filter):
 
     url = "https://dashboard.alchemy.com/api/create-webhook"
     query = getGraphQLQuery(
-        contractAddress=contract,
-        network=network,
+        contractAddress=contract, network=network, blockFilter=filter
     )
 
     payload = {
