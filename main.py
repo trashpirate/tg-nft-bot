@@ -32,7 +32,7 @@ async def main() -> None:
                 "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
             ),
             website="https://flames.buyholdearn.com",
-            webhookid="wh_rnke0hi39qpbzmg2",
+            webhookid="wh_plrryh8h7hvii7lf",
             chats=ids,
         )
         db.session.add(config)
@@ -44,7 +44,7 @@ async def main() -> None:
                 "0x49902747796C2ABcc5ea640648551DDbc2c50ba2"
             ),
             website="https://flamelings.buyholdearn.com",
-            webhookid="wh_6thwdp3w0kamsgf0",
+            webhookid="wh_52iyjprm4bguy0nb",
             chats=ids,
         )
         db.session.add(config)
@@ -56,7 +56,7 @@ async def main() -> None:
                 "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2"
             ),
             website="https://liquid.buyholdearn.com",
-            webhookid="wh_xf5hud0876i08gcu",
+            webhookid="wh_d0lnusq2spz5fi3e",
             chats=ids,
         )
         db.session.add(config)
