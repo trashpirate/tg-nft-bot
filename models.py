@@ -4,7 +4,6 @@ from psycopg2.extras import RealDictCursor
 
 from credentials import DATABASE_URL
 
-
 db = SQLAlchemy()
 
 

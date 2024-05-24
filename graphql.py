@@ -58,5 +58,5 @@ def create_webhook(network, contract, filter):
     }
 
     response = requests.post(url, json=payload, headers=headers)
-
+    # needs some error hanlding here
     print(response.text)
