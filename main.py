@@ -91,7 +91,6 @@ async def main() -> None:
             port=PORT,
             use_colors=False,
             host="0.0.0.0",
-            lifespan="on",
         )
     )
 
