@@ -172,9 +172,13 @@ async def webhook_update(
             update.contract, update.toAddress, update.tokenId, update.hash, "ethereum"
         )
         for chat_id in chats:
-            await context.bot.send_photo(
-                chat_id=chat_id, photo=img, caption=text, parse_mode="HTML"
-            )
+            try:
+                await context.bot.send_photo(
+                    chat_id=chat_id, photo=img, caption=text, parse_mode="HTML"
+                )
+            except:
+                print("Sending message failed")
+                return
 
     elif network == "BASE_MAINNET":
         [img, text] = getMetadata(
@@ -182,9 +186,13 @@ async def webhook_update(
         )
 
         for chat_id in chats:
-            await context.bot.send_photo(
-                chat_id=chat_id, photo=img, caption=text, parse_mode="HTML"
-            )
+            try:
+                await context.bot.send_photo(
+                    chat_id=chat_id, photo=img, caption=text, parse_mode="HTML"
+                )
+            except:
+                print("Sending message failed")
+                return
 
 
 async def update_queue(new_data):
