@@ -32,7 +32,7 @@ async def main() -> None:
                 "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
             ),
             website="https://flames.buyholdearn.com",
-            webhookid="wh_lr0gi7ufa9rfeya6",
+            webhookid="wh_rnke0hi39qpbzmg2",
             chats=ids,
         )
         db.session.add(config)
