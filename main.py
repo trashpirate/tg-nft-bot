@@ -20,6 +20,7 @@ async def main() -> None:
     id_strings = GROUP_IDS.split(",")
     ids = [int("-100" + chatid) for chatid in id_strings]
 
+    print("initializing app with database...")
     db.init_app(app)
     with app.app_context():
         db.drop_all()
@@ -65,7 +66,8 @@ async def main() -> None:
     @app.post("/telegram")
     async def telegram() -> Response:
         # Handle incoming Telegram updates by putting them into the `update_queue`
-        await update_queue(request.json)
+        json_data = request.json
+        await update_queue(json_data)
         return Response(status=HTTPStatus.OK)
 
     @app.route("/nfts", methods=["GET", "POST"])
@@ -94,10 +96,13 @@ async def main() -> None:
         )
     )
 
+    print("Initialize bot...")
     bot = await start_app()
-    # Run bot and webserver together
+
+    print("Run bot and webserver together...")
     async with bot:
         await bot.start()
+        print("Bot started. Starting Server...")
         await webserver.serve()
         await bot.stop()
 

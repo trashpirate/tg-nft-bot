@@ -1,4 +1,4 @@
-from credentials import ALCHEMY_API_KEY_ETH, ALCHEMY_API_KEY_BASE
+from credentials import ALCHEMY_API_KEY_ETH, ALCHEMY_API_KEY_BASE, TABLE
 import requests
 
 from models import query_website_by_contract
@@ -7,7 +7,7 @@ from models import query_website_by_contract
 def getMetadata(contract, owner, tokenId, hash, chain):
 
     match chain:
-        case "ethereum":
+        case "ETH_MAINNET":
             url = f"https://eth-mainnet.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_ETH}/getNFTMetadata?contractAddress={contract}&tokenId={tokenId}"
             opensea = f"https://opensea.io/assets/ethereum/{contract}/{tokenId}"
             rarible = f"https://rarible.com/token/{contract}:{tokenId}"
@@ -15,7 +15,7 @@ def getMetadata(contract, owner, tokenId, hash, chain):
                 f"https://magiceden.io/item-details/ethereum/{contract}/{tokenId}"
             )
             etherscan = "https://etherscan.io/"
-        case "base":
+        case "BASE_MAINNET":
             url = f"https://base-mainnet.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_BASE}/getNFTMetadata?contractAddress={contract}&tokenId={tokenId}"
             opensea = f"https://opensea.io/assets/base/{contract}/{tokenId}"
             rarible = f"https://rarible.com/token/base/{contract}:{tokenId}"
@@ -42,7 +42,7 @@ def getMetadata(contract, owner, tokenId, hash, chain):
     nft_metadata = data_json["raw"]["metadata"]
     nft_image = data_json["image"]["originalUrl"]
 
-    [_, website] = query_website_by_contract("collections", contract)
+    [_, website] = query_website_by_contract(TABLE, contract)
 
     title = (f"NEW {collection_name} MINT!").upper()
     message = f"  \n<b>{title}</b>\n\n"

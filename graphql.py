@@ -58,5 +58,7 @@ def create_webhook(network, contract, filter):
     }
 
     response = requests.post(url, json=payload, headers=headers)
+    data_json = response.json()
+
     # needs some error hanlding here
-    print(response.text)
+    return data_json["data"]["id"]
