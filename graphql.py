@@ -48,7 +48,7 @@ def create_webhook(network, contract, filter):
             "query": query,
             "skip_empty_messages": True,
         },
-        "webhook_url": "https://exotic-crayfish-striking.ngrok-free.app/nfts",
+        "webhook_url": "https://earn-nft-bot-0c1554d0595a.herokuapp.com/nfts",
     }
     headers = {
         "accept": "application/json",

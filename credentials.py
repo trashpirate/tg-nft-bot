@@ -8,6 +8,8 @@ TOKEN = str(os.getenv("TOKEN"))
 PORT = int(os.environ.get("PORT", 8000))
 URL = str(os.getenv("URL"))
 DATABASE_URL = str(os.getenv("DATABASE_URL"))
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 ALCHEMY_AUTH_TOKEN = str(os.getenv("ALCHEMY_AUTH_TOKEN"))
 ALCHEMY_API_KEY_ETH = str(os.getenv("ALCHEMY_API_KEY_ETH"))
