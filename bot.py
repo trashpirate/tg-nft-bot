@@ -26,11 +26,11 @@ from telegram.ext import (
     Application,
 )
 from web3 import Web3
-from models import CollectionConfigs, db, query_table
+from models import CollectionConfigs, add_config, check_if_exists, db, query_table
 from credentials import ADMIN_ID, TABLE, TOKEN, URL
 from graphql import create_webhook
-from nfts import getMetadata
-from models import query_network_by_webhook, add_new_network
+from nfts import getCollectionInfo, getMetadata
+from models import query_network_by_webhook
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -112,12 +112,56 @@ application = (
     ApplicationBuilder().token(TOKEN).updater(None).context_types(context_types).build()
 )
 
-MAIN, NETWORK, CONTRACT, FILTER = range(4)
+
+# states
+MAIN, NETWORK, CONTRACT, WEBSITE = range(4)
 chat_ids = []
 network_selected = ""
 contract_address = ""
 
 
+# keybords
+def return_menu():
+    keyboard = [
+        [
+            InlineKeyboardButton("RETURN", callback_data="return"),
+            InlineKeyboardButton("CANCEL", callback_data="cancel"),
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def main_menu():
+    message_text = "CONFIG MENU"
+    keyboard = [
+        [
+            InlineKeyboardButton("NEW CONFIG", callback_data="new"),
+            InlineKeyboardButton("VIEW CONFIG", callback_data="view"),
+        ],
+        [
+            InlineKeyboardButton("RETURN", callback_data="return"),
+            InlineKeyboardButton("CANCEL", callback_data="cancel"),
+        ],
+    ]
+    return [InlineKeyboardMarkup(keyboard), message_text]
+
+
+def network_menu():
+    message_text = "Choose a Network:"
+    keyboard = [
+        [
+            InlineKeyboardButton("ETH", callback_data="ETH_MAINNET"),
+            InlineKeyboardButton("BASE", callback_data="BASE_MAINNET"),
+        ],
+        [
+            InlineKeyboardButton("RETURN", callback_data="return"),
+            InlineKeyboardButton("CANCEL", callback_data="cancel"),
+        ],
+    ]
+    return [InlineKeyboardMarkup(keyboard), message_text]
+
+
+# dataclasses
 @dataclass
 class WebhookUpdate:
     webhookId: str
@@ -128,6 +172,7 @@ class WebhookUpdate:
     hash: str
 
 
+# functions
 async def parse_tx(json_data):
     logs = json_data["event"]["data"]["block"]["logs"]
 
@@ -183,27 +228,16 @@ async def start(update: Update, context: CustomContext):
             )
             return ConversationHandler.END
 
-    keyboard = [
-        [
-            InlineKeyboardButton("NEW CONFIG", callback_data="new"),
-            InlineKeyboardButton("VIEW CONFIG", callback_data="view"),
-        ],
-        [
-            InlineKeyboardButton("UPDATE CONFIG", callback_data="update"),
-            InlineKeyboardButton("CANCEL", callback_data="cancel"),
-        ],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    [reply_markup, message_text] = main_menu()
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="MAIN MENU",
+        text=message_text,
         reply_markup=reply_markup,
     )
     return MAIN
 
 
-async def add_token(update: Update, context: CustomContext):
+async def select_action(update: Update, context: CustomContext):
 
     query = update.callback_query
     await query.answer()
@@ -214,6 +248,17 @@ async def add_token(update: Update, context: CustomContext):
         )
         return ConversationHandler.END
 
+    if query.data == "return":
+        [reply_markup, message_text] = main_menu()
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_text,
+            reply_markup=reply_markup,
+        )
+
+        return MAIN
+
     if query.data == "view":
         rows = query_table(TABLE)
 
@@ -223,17 +268,7 @@ async def add_token(update: Update, context: CustomContext):
             message_text += f"Config {index}:\n{r[0]} ({r[2]})\n{r[1]}\n\n"
             index += 1
 
-        keyboard = [
-            [
-                InlineKeyboardButton("NEW CONFIG", callback_data="new"),
-                InlineKeyboardButton("VIEW CONFIG", callback_data="view"),
-            ],
-            [
-                InlineKeyboardButton("UPDATE CONFIG", callback_data="update"),
-                InlineKeyboardButton("CANCEL", callback_data="cancel"),
-            ],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = return_menu()
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -247,18 +282,8 @@ async def add_token(update: Update, context: CustomContext):
         context.chat = update.effective_chat.id
         chat_ids.append(update.effective_chat.id)
 
-        keyboard = [
-            [
-                InlineKeyboardButton("ETH", callback_data="ETH_MAINNET"),
-                InlineKeyboardButton("BASE", callback_data="BASE_MAINNET"),
-            ],
-            [
-                InlineKeyboardButton("CANCEL", callback_data="cancel"),
-            ],
-        ]
+        [reply_markup, message_text] = network_menu()
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        message_text = "Choose a Network:"
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message_text,
@@ -268,7 +293,7 @@ async def add_token(update: Update, context: CustomContext):
     return NETWORK
 
 
-async def add_network(update: Update, context: CustomContext):
+async def select_network(update: Update, context: CustomContext):
 
     # print("added network")
     query = update.callback_query
@@ -281,42 +306,79 @@ async def add_network(update: Update, context: CustomContext):
         )
         return ConversationHandler.END
 
+    if query.data == "return":
+        [reply_markup, message_text] = main_menu()
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_text,
+            reply_markup=reply_markup,
+        )
+
+        return MAIN
+
     context.network = query.data
 
+    message_text = "Enter NFT Contract address:"
     await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Enter NFT Contract address:"
+        chat_id=update.effective_chat.id,
+        text=message_text,
     )
+
     return CONTRACT
 
 
-async def add_contract(update: Update, context: CustomContext):
+async def enter_contract(update: Update, context: CustomContext):
+
     contract = update.message.text
-    context.contract = contract
     if len(contract) == 42 and contract[:2] == "0x":
-        global contract_address
-        contract_address = contract
+        context.contract = contract
+        message_text = "Enter your preferred website link (enter # to skip):"
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Enter a block filter (only testing):",
+            text=message_text,
         )
+        return WEBSITE
+
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Please enter a valid wallet address.",
+            text="Please enter a valid wallet address:",
         )
-    return FILTER
+        return CONTRACT
 
 
-async def add_filter(update: Update, context: CustomContext):
-    filter = update.message.text
+async def enter_website(update: Update, context: CustomContext):
 
-    webhookId = create_webhook(
-        network=context.network, contract=context.contract, filter=filter
-    )
+    website = update.message.text
+    if website == context.contract:
+        return WEBSITE
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Webhook created."
-    )
+    entry = await check_if_exists(context.network, context.contract)
+
+    if entry is None:
+        webhookId = create_webhook(
+            network=context.network, contract=context.contract, filter="None"
+        )
+        [name, symbol] = await getCollectionInfo(context.network, context.contract)
+        await add_config(
+            name,
+            context.network,
+            context.contract,
+            website,
+            webhookId,
+            [update.effective_chat.id],
+        )
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Collection is added."
+        )
+
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Collection already exists."
+        )
+
     return ConversationHandler.END
 
 
@@ -344,7 +406,7 @@ async def webhook_update(
 ) -> None:
     [chats, network] = query_network_by_webhook(TABLE, update.webhookId)
 
-    [img, text] = getMetadata(
+    [img, text] = await getMetadata(
         update.contract, update.toAddress, update.tokenId, update.hash, network
     )
     for chat_id in chats:
@@ -369,10 +431,10 @@ async def start_app():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            MAIN: [CallbackQueryHandler(add_token)],
-            NETWORK: [CallbackQueryHandler(add_network)],
-            CONTRACT: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_contract)],
-            FILTER: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_filter)],
+            MAIN: [CallbackQueryHandler(select_action)],
+            NETWORK: [CallbackQueryHandler(select_network)],
+            CONTRACT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_contract)],
+            WEBSITE: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_website)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

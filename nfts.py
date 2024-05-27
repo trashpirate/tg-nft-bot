@@ -4,7 +4,26 @@ import requests
 from models import query_website_by_contract
 
 
-def getMetadata(contract, owner, tokenId, hash, chain):
+async def getCollectionInfo(chain, contract):
+
+    match chain:
+        case "ETH_MAINNET":
+            chain_tag = "eth-mainnet"
+        case "BASE_MAINNET":
+            chain_tag = "base-mainnet"
+        case _:
+            chain_tag = "eth-mainnet"
+
+    url = f"https://{chain_tag}.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_ETH}/getContractMetadata?contractAddress={contract}"
+
+    headers = {"accept": "application/json"}
+
+    response = requests.get(url, headers=headers)
+    data_json = response.json()
+    return [data_json["name"], data_json["symbol"]]
+
+
+async def getMetadata(contract, owner, tokenId, hash, chain):
 
     match chain:
         case "ETH_MAINNET":
