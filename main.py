@@ -32,15 +32,21 @@ logger = logging.getLogger(__name__)
 REFLECTIONS = range(1)
 
 
-def getReflections(address):
-    reflections = calcReflections(address)
-    text = "Reflections: {:,.2f} EARN".format(reflections)
+async def getReflections(address):
+    reflections = await calcReflections(address)
+    if reflections is not None:
+        text = "Reflections: {:,.2f} EARN".format(reflections)
+    else:
+        text = "Reflections: Service currently not available."
     return text
 
 
-def getBalance(address):
-    balance = getBalanceOf(address)
-    text = "Balance: {:,.2f} EARN".format(balance)
+async def getBalance(address):
+    balance = await getBalanceOf(address)
+    if balance is not None:
+        text = "Balance: {:,.2f} EARN".format(balance)
+    else:
+        text = "Balance: Service currently not available."
     return text
 
 
@@ -80,8 +86,8 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def reflections(update: Update, context: ContextTypes.DEFAULT_TYPE):
     address = update.message.text
     if len(address) == 42 and address[:2] == "0x":
-        reflect = getReflections(address)
-        balance = getBalance(address)
+        reflect = await getReflections(address)
+        balance = await getBalance(address)
         text = f"{balance}\n{reflect}"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
     else:
@@ -97,8 +103,8 @@ async def inline_reflections(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not address:
         return
     if len(address) == 42 and address[:2] == "0x":
-        reflect = getReflections(address)
-        balance = getBalance(address)
+        reflect = await getReflections(address)
+        balance = await getBalance(address)
         results = [
             InlineQueryResultArticle(
                 id=str(uuid4()),
