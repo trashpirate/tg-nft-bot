@@ -13,6 +13,7 @@ TABLE = str(os.getenv("TABLE"))
 ALCHEMY_AUTH_TOKEN = str(os.getenv("ALCHEMY_AUTH_TOKEN"))
 ALCHEMY_API_KEY_ETH = str(os.getenv("ALCHEMY_API_KEY_ETH"))
 ALCHEMY_API_KEY_BASE = str(os.getenv("ALCHEMY_API_KEY_BASE"))
+MORALIS_API_KEY = str(os.getenv("MORALIS_API_KEY"))
 
 ADMIN_ID = str(os.getenv("ADMIN_ID"))
 GROUP_IDS = str(os.getenv("GROUP_IDS"))

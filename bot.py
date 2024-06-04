@@ -216,6 +216,12 @@ def button_callback(update: Update, context: CallbackContext):
 
 async def start(update: Update, context: CustomContext):
 
+    create_webhook(
+        network="0x38",
+        contract="0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2",
+        filter="None",
+    )
+
     isPrivate = update.effective_chat.type == "private"
     if not isPrivate:
         admins = await update.effective_chat.get_administrators()

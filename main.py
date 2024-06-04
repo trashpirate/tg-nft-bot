@@ -32,13 +32,9 @@ async def main() -> None:
             await parse_tx(json_data)
             return Response(status=HTTPStatus.OK)
 
-        except KeyError:
-            abort(
-                HTTPStatus.BAD_REQUEST,
-                "Please pass all query parameters.",
-            )
-        except ValueError:
-            abort(HTTPStatus.BAD_REQUEST, "No valid data.")
+        except:
+            print("Invalid request.")
+            return Response(status=HTTPStatus.OK)
 
     webserver = uvicorn.Server(
         config=uvicorn.Config(

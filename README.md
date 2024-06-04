@@ -64,6 +64,11 @@ ngrok http --domain=exotic-crayfish-striking.ngrok-free.app 8000
 ```
 sudo docker run --name mypostgres --net host -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres
 ```
+# remove docker container
+```
+sudo docker rm -f mypostgres
+
+```
 # access docker container
 ```
 sudo docker exec -it mypostgres psql -U postgres
