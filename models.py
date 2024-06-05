@@ -70,6 +70,14 @@ def query_website_by_contract(table, contract):
 
 
 async def check_if_exists(network, contract):
+
+    with flask_app.app_context():
+
+        row_to_update = CollectionConfigs.query.filter_by(
+            address=contract, network=network
+        ).first()
+        print(row_to_update.id)
+
     conn = connect_to_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(

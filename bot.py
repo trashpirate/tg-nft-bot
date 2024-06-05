@@ -383,7 +383,7 @@ async def enter_website(update: Update, context: CustomContext):
         return WEBSITE
 
     entry = await check_if_exists(context.network, context.contract)
-    print(entry)
+
     if entry is None:
         webhookId = create_webhook(
             network=context.network, contract=context.contract, filter="None"
