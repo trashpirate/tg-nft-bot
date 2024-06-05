@@ -39,54 +39,49 @@ def connect_to_db():
 
 
 def query_table(table):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {TABLE}")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    info = [[r.get("name"), r.get("address"), r.get("network")] for r in rows]
-    return info
+    with flask_app.app_context():
+        collections = CollectionConfigs.query.all()
+        collection_list = [
+            [collection.name, collection.address, collection.network]
+            for collection in collections
+        ]
+    return collection_list
 
 
 def query_network_by_webhook(table, webhookId):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {TABLE} WHERE webhookid='{webhookId}'")
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return [result.get("chats"), result.get("network")] if result else None
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.network
 
 
-def query_website_by_contract(table, contract):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {TABLE} WHERE address='{contract}'")
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return [result.get("chats"), result.get("website")] if result else None
+def query_website_by_contract(table, contract, network):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(
+            address=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.website
 
 
 async def check_if_exists(network, contract):
 
     with flask_app.app_context():
 
-        row_to_update = CollectionConfigs.query.filter_by(
+        entry = CollectionConfigs.query.filter_by(
             address=contract, network=network
         ).first()
-        print(row_to_update.id)
 
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        f"SELECT * FROM {TABLE} WHERE network='{network}' AND address='{contract}'"
-    )
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return result if result else None
+    if entry is None:
+        return None
+    else:
+        return entry.id
 
 
 async def initial_config():
