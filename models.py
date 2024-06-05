@@ -82,45 +82,15 @@ async def check_if_exists(network, contract):
 
 
 async def initial_config():
-    id_strings = GROUP_IDS.split(",")
-    ids = [int("-100" + chatid) for chatid in id_strings]
-
     print("initializing app with database...")
     db.init_app(flask_app)
-    with flask_app.app_context():
-        db.drop_all()
-        db.create_all()
-
-        config = CollectionConfigs(
-            name="Flames",
-            network="ETH_MAINNET",
-            address=Web3.to_checksum_address(
-                "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
-            ),
-            website="https://flames.buyholdearn.com",
-            webhookid="wh_plrryh8h7hvii7lf",
-            chats=ids,
-        )
-        db.session.add(config)
-
-        config = CollectionConfigs(
-            name="Flamelings",
-            network="ETH_MAINNET",
-            address=Web3.to_checksum_address(
-                "0x49902747796C2ABcc5ea640648551DDbc2c50ba2"
-            ),
-            website="https://flamelings.buyholdearn.com",
-            webhookid="wh_52iyjprm4bguy0nb",
-            chats=ids,
-        )
-        db.session.add(config)
-
-        db.session.commit()
+    # with flask_app.app_context():
+    #     db.drop_all()
+    #     db.create_all()
+    #     db.session.commit()
 
 
 async def add_config(name, network, address, website, webhookid, ids):
-    # id_strings = GROUP_IDS.split(",")
-    # ids = [int("-100" + chatid) for chatid in id_strings]
 
     with flask_app.app_context():
         config = CollectionConfigs(
@@ -132,4 +102,20 @@ async def add_config(name, network, address, website, webhookid, ids):
             chats=ids,
         )
         db.session.add(config)
+        db.session.commit()
+
+
+async def update_config(name, network, address, website, webhookid, ids):
+
+    with flask_app.app_context():
+
+        row_to_update = CollectionConfigs.query.filter_by(
+            address=address, network=network
+        ).first()
+        row_to_update.name = name
+        row_to_update.network = network
+        row_to_update.address = Web3.to_checksum_address(address)
+        row_to_update.website = website
+        row_to_update.webhookid = webhookid
+        row_to_update.chats = ids
         db.session.commit()

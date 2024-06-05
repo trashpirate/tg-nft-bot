@@ -26,7 +26,14 @@ from telegram.ext import (
     Application,
 )
 from web3 import Web3
-from models import CollectionConfigs, add_config, check_if_exists, db, query_table
+from models import (
+    CollectionConfigs,
+    add_config,
+    check_if_exists,
+    db,
+    query_table,
+    update_config,
+)
 from credentials import ADMIN_ID, TABLE, TOKEN, URL
 from graphql import create_webhook
 from nfts import getCollectionInfo, getMetadata
@@ -150,8 +157,14 @@ def network_menu():
     message_text = "Choose a Network:"
     keyboard = [
         [
-            InlineKeyboardButton("ETH", callback_data="ETH_MAINNET"),
-            InlineKeyboardButton("BASE", callback_data="BASE_MAINNET"),
+            InlineKeyboardButton("ETH", callback_data="ethereum-mainnet"),
+            InlineKeyboardButton("BASE", callback_data="base-mainnet"),
+            InlineKeyboardButton("BNB", callback_data="bnbchain-mainnet"),
+        ],
+        [
+            InlineKeyboardButton("Arbitrum", callback_data="arbitrum-mainnet"),
+            InlineKeyboardButton("Avalanche", callback_data="avalanche-mainnet"),
+            InlineKeyboardButton("Polygon", callback_data="polygon-mainnet"),
         ],
         [
             InlineKeyboardButton("RETURN", callback_data="return"),
@@ -170,40 +183,49 @@ class WebhookUpdate:
     fromAddress: str
     toAddress: str
     hash: str
+    type: str
 
 
 # functions
 async def parse_tx(json_data):
-    logs = json_data["event"]["data"]["block"]["logs"]
-
-    if len(logs) == 0:
-        raise ValueError("No data available.")
 
     # webhook id
-    webhookId = json_data["webhookId"]
+    webhookId = json_data["metadata"]["stream_id"]
+    print(webhookId)
 
-    for log in logs:
-        # contract address
-        contract = Web3.to_checksum_address(log["account"]["address"])
-        # tokenId
-        tokenId = int(log["topics"][3], 16)
-        # owner address
-        toAddress = Web3.to_checksum_address("0x" + log["topics"][2][-40:])
-        # owner address
-        fromAddress = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
-        # transaction hash
-        hash = log["transaction"]["hash"]
+    receipts = json_data["data"][0]["receipts"]
+    if len(receipts) == 0:
+        raise ValueError("No data available.")
 
-        await application.update_queue.put(
-            WebhookUpdate(
-                webhookId=webhookId,
-                tokenId=tokenId,
-                contract=contract,
-                fromAddress=fromAddress,
-                toAddress=toAddress,
-                hash=hash,
+    for receipt in receipts:
+
+        for log in receipt["logs"]:
+            # contract address
+            contract = Web3.to_checksum_address(log["address"])
+            # from address
+            fromAddress = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
+            if fromAddress == "0x0000000000000000000000000000000000000000":
+                txType = "mint"
+            else:
+                txType = "transfer"
+            # owner address
+            toAddress = Web3.to_checksum_address("0x" + log["topics"][2][-40:])
+            # tokenId
+            tokenId = int(log["topics"][3], 16)
+            # transaction hash
+            hash = log["transactionHash"]
+
+            await application.update_queue.put(
+                WebhookUpdate(
+                    webhookId=webhookId,
+                    tokenId=tokenId,
+                    contract=contract,
+                    fromAddress=fromAddress,
+                    toAddress=toAddress,
+                    hash=hash,
+                    type=txType,
+                )
             )
-        )
 
 
 def button_callback(update: Update, context: CallbackContext):
@@ -216,11 +238,11 @@ def button_callback(update: Update, context: CallbackContext):
 
 async def start(update: Update, context: CustomContext):
 
-    create_webhook(
-        network="0x38",
-        contract="0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2",
-        filter="None",
-    )
+    # webhookId = create_webhook(
+    #     network="ethereum-mainnet",
+    #     contract="0x12a961e8cc6c94ffd0ac08deb9cde798739cf775",
+    #     filter="None",
+    # )
 
     isPrivate = update.effective_chat.type == "private"
     if not isPrivate:
@@ -361,7 +383,7 @@ async def enter_website(update: Update, context: CustomContext):
         return WEBSITE
 
     entry = await check_if_exists(context.network, context.contract)
-
+    print(entry)
     if entry is None:
         webhookId = create_webhook(
             network=context.network, contract=context.contract, filter="None"
@@ -381,8 +403,16 @@ async def enter_website(update: Update, context: CustomContext):
         )
 
     else:
+        await update_config(
+            "Updated",
+            context.network,
+            context.contract,
+            website,
+            "some id",
+            [update.effective_chat.id],
+        )
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Collection already exists."
+            chat_id=update.effective_chat.id, text="Collection updated."
         )
 
     return ConversationHandler.END

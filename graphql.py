@@ -1,59 +1,55 @@
 import requests
-from credentials import ALCHEMY_AUTH_TOKEN, URL, MORALIS_API_KEY
-from moralis import streams
-import json
-from frozendict import frozendict
+from credentials import ALCHEMY_AUTH_TOKEN, QUICKNODE_API_KEY, URL
+import base64
+from web3 import HTTPProvider, Web3
+
+RPC = {
+    "ethereum-mainnet": "https://wild-still-yard.quiknode.pro/ac51481a54301aae02e01bc7651111bdfc0835dc/",
+    "bnbchain-mainnet": "https://clean-light-bush.bsc.quiknode.pro/8ef25fcc9b3b66c1511c0e8df2accaf49782ace0/",
+    "base-mainnet": "https://light-summer-theorem.base-mainnet.quiknode.pro/7e5ea5d963edab5820f279017f1f0aaa02395d5f/",
+    "avalanche-mainnet": "https://quick-twilight-river.avalanche-mainnet.quiknode.pro/21047f4234e2f035ad804edf6019e153efb4f2a5/ext/bc/C/rpc/",
+    "arbitrum-mainnet": "https://fluent-distinguished-research.arbitrum-mainnet.quiknode.pro/b1c4d69561c9735d4d15c5ad81ad88bb26409bea/",
+    "polygon-mainnet": "https://convincing-nameless-replica.matic.quiknode.pro/6dbf5fed1a503962f06a822716e4bb04155dcb2d/",
+}
 
 
-def getMoralisWebhookQuery(chainId, contractAddress, description, tag):
+def getQuickNodeFilter(contractAddress):
+    js_code = """
+    function main(data) {
+        try {
+            var data = data.streamData;
+            var filteredReceipts = [];
+            data.forEach(receipt => {
+                let relevantLogs = receipt.logs.filter(log =>
+                    log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" && log.address.toLowerCase() === contractAddress.toLowerCase()
+                );
+                if (relevantLogs.length > 0) {
+                    filteredReceipts.push(receipt);
+                }
+            });
 
-    NFT_transfer_ABI = {
-        "anonymous": False,
-        "inputs": [
-            {
-                "indexed": True,
-                "internalType": "address",
-                "name": "from",
-                "type": "address",
-            },
-            {
-                "indexed": True,
-                "internalType": "address",
-                "name": "to",
-                "type": "address",
-            },
-            {
-                "indexed": True,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256",
-            },
-        ],
-        "name": "Transfer",
-        "type": "event",
+            return {
+              totalReceipts: data.length,
+              filteredCount: filteredReceipts.length,
+              receipts: filteredReceipts
+            };
+        } catch (e) {
+            return {error: e.message};
+        }
     }
+    """
 
-    body = {
-        "description": description,
-        "tag": tag,
-        "abi": frozendict(NFT_transfer_ABI),
-        "topic0": ["Transfer(address,address,uint256)"],
-        "allAddresses": True,
-        "triggers": [
-            {
-                "type": "log",
-                "contractAddress": contractAddress,
-                "functionAbi": NFT_transfer_ABI,
-            }
-        ],
-        "webhookUrl": f"{URL}/nfts",
-        "includeNativeTxs": True,
-        "includeInternalTxs": True,
-        "includeContractLogs": True,
-        "chainIds": [chainId],
-    }
+    js_code = js_code.replace("contractAddress", f'"{contractAddress}"')
 
-    return body
+    # Convert the JavaScript code to bytes
+    js_code_bytes = js_code.encode("utf-8")
+
+    # Encode the bytes using base64
+    base64_encoded_js_code = base64.b64encode(js_code_bytes)
+
+    # Convert the base64 bytes back to a string
+    base64_encoded_js_code_str = base64_encoded_js_code.decode("utf-8")
+    return base64_encoded_js_code_str
 
 
 def getGraphQLQuery(contractAddress, blockFilter):
@@ -91,51 +87,136 @@ def getGraphQLQuery(contractAddress, blockFilter):
     return query
 
 
-def create_webhook(network, contract, filter):
-    print(MORALIS_API_KEY)
+def post_quicknode(payload, url):
 
-    params = {
-        "limit": 100,
-        "cursor": "",
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "x-api-key": QUICKNODE_API_KEY,  # Replace with your actual API key
     }
 
-    result = streams.evm_streams.get_streams(
-        api_key=MORALIS_API_KEY,
-        params=params,
-    )
-
-    print(result)
-
-    stream_body = getMoralisWebhookQuery(network, contract, "TEST", "test")
-
-    result = streams.evm_streams.create_stream(
-        api_key=MORALIS_API_KEY,
-        body=stream_body,
-    )
-
-    print(result)
+    response = requests.post(url, headers=headers, json=payload)
+    return response
 
 
-# url = "https://dashboard.alchemy.com/api/create-webhook"
-# query = getGraphQLQuery(contractAddress=contract, blockFilter=filter)
+def get_quicknode_streams():
+    url = "https://api.quicknode.com/streams/rest/v1/streams"
 
-# payload = {
-#     "network": network,
-#     "webhook_type": "GRAPHQL",
-#     "graphql_query": {
-#         "query": query,
-#         "skip_empty_messages": True,
-#     },
-#     "webhook_url": f"{URL}/nfts",
-# }
-# headers = {
-#     "accept": "application/json",
-#     "X-Alchemy-Token": ALCHEMY_AUTH_TOKEN,
-#     "content-type": "application/json",
-# }
+    headers = {"accept": "application/json", "x-api-key": QUICKNODE_API_KEY}
 
-# response = requests.post(url, json=payload, headers=headers)
-# data_json = response.json()
+    response = requests.request("GET", url, headers=headers, data={})
+    data_json = response.json()
+    return data_json["data"]
 
-# # needs some error hanlding here
-# return data_json["data"]["id"]
+
+def delete_webhook(id):
+    url = "https://api.quicknode.com/streams/rest/v1/streams/" + id
+    response = post_quicknode({}, url)
+    print(response.text)
+
+
+def pause_webhook(id):
+
+    url = "https://api.quicknode.com/streams/rest/v1/streams/" + id + "/pause"
+    response = post_quicknode({}, url)
+    print(response.text)
+
+
+def activate_webhook(id):
+
+    url = "https://api.quicknode.com/streams/rest/v1/streams/" + id + "/activate"
+    response = post_quicknode({}, url)
+    print(response.text)
+
+
+def create_webhook(network, contract, filter):
+
+    stream_id = None
+    stream_name = network + "-" + contract
+    streams = get_quicknode_streams()
+    if streams is not None:
+        for stream in streams:
+            if stream["name"] == stream_name:
+                stream_id = stream["id"]
+                print(f"Webhook already exists for this collection: id = {stream_id}")
+                break
+                # delete_webhook(stream_id)
+
+    if stream_id is None:
+        w3 = Web3(HTTPProvider(RPC[network]))
+        currentBlock = w3.eth.block_number
+        filter = getQuickNodeFilter(contract)
+
+        # url = "https://api.quicknode.com/streams/rest/v1/streams/test_filter"
+
+        # payload = {
+        #     "network": network,
+        #     "dataset": "receipts",
+        #     "filter_function": filter,
+        #     "block": "37953944",
+        # }
+        # data_json = post_quicknode(payload, url)
+        # print(data_json.text)
+
+        url = "https://api.quicknode.com/streams/rest/v1/streams"
+
+        payload = {
+            "name": network + "-" + Web3.to_checksum_address(contract),
+            "network": network,
+            "dataset": "receipts",
+            "filter_function": filter,
+            "region": "usa_east",
+            "start_range": currentBlock,
+            "end_range": -1,
+            "dataset_batch_size": 1,
+            "include_stream_metadata": "body",
+            "destination": "webhook",
+            "fix_block_reorgs": 0,
+            "keep_distance_from_tip": 0,
+            "destination_attributes": {
+                "url": f"{URL}/nfts",
+                "compression": "none",
+                "headers": {
+                    "Content-Type": "text/plain",
+                },
+                "max_retry": 3,
+                "retry_interval_sec": 1,
+                "post_timeout_sec": 10,
+            },
+            "status": "paused",
+        }
+
+        response = post_quicknode(payload, url)
+        data_json = response.json()
+        pause_webhook(data_json["id"])
+        return data_json["id"]
+
+    else:
+        return stream_id
+
+
+# def create_webhook(network, contract, filter):
+
+#     url = "https://dashboard.alchemy.com/api/create-webhook"
+#     query = getGraphQLQuery(contractAddress=contract, blockFilter=filter)
+
+#     payload = {
+#         "network": network,
+#         "webhook_type": "GRAPHQL",
+#         "graphql_query": {
+#             "query": query,
+#             "skip_empty_messages": True,
+#         },
+#         "webhook_url": f"{URL}/nfts",
+#     }
+#     headers = {
+#         "accept": "application/json",
+#         "X-Alchemy-Token": ALCHEMY_AUTH_TOKEN,
+#         "content-type": "application/json",
+#     }
+
+#     response = requests.post(url, json=payload, headers=headers)
+#     data_json = response.json()
+
+#     # needs some error hanlding here
+#     return data_json["data"]["id"]
