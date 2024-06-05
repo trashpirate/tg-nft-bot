@@ -116,7 +116,6 @@ def delete_webhook(id):
 
 
 def pause_webhook(id):
-
     url = "https://api.quicknode.com/streams/rest/v1/streams/" + id + "/pause"
     response = post_quicknode({}, url)
     print(response.text)
@@ -177,7 +176,7 @@ def create_webhook(network, contract, filter):
                 "url": f"{URL}/nfts",
                 "compression": "none",
                 "headers": {
-                    "Content-Type": "text/plain",
+                    "Content-Type": "application/json",
                 },
                 "max_retry": 3,
                 "retry_interval_sec": 1,

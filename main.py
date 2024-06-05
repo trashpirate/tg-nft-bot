@@ -23,13 +23,16 @@ async def main() -> None:
         await update_queue(json_data)
         return Response(status=HTTPStatus.OK)
 
-    @flask_app.route("/nfts", methods=["POST"])
+    @flask_app.route("/nfts", methods=["GET", "POST"])
     async def nft_udpates() -> Response:
         # Handle incoming NFT updates by putting them into the `update_queue`
-
+        json_data = request.json
         try:
             json_data = request.json
-            await parse_tx(json_data)
+            if len(json_data["data"][0]["receipts"]) == 0:
+                print("No new data.")
+            else:
+                await parse_tx(json_data)
             return Response(status=HTTPStatus.OK)
 
         except:

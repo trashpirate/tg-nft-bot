@@ -27,10 +27,9 @@ from telegram.ext import (
 )
 from web3 import Web3
 from models import (
-    CollectionConfigs,
     add_config,
     check_if_exists,
-    db,
+    query_chats_by_contract,
     query_table,
     update_config,
 )
@@ -191,11 +190,7 @@ async def parse_tx(json_data):
 
     # webhook id
     webhookId = json_data["metadata"]["stream_id"]
-    print(webhookId)
-
     receipts = json_data["data"][0]["receipts"]
-    if len(receipts) == 0:
-        raise ValueError("No data available.")
 
     for receipt in receipts:
 
@@ -207,6 +202,8 @@ async def parse_tx(json_data):
             if fromAddress == "0x0000000000000000000000000000000000000000":
                 txType = "mint"
             else:
+                # TODO:
+                # use value from transaction to check if sold - exclude pure transfers
                 txType = "transfer"
             # owner address
             toAddress = Web3.to_checksum_address("0x" + log["topics"][2][-40:])
@@ -288,7 +285,7 @@ async def select_action(update: Update, context: CustomContext):
         return MAIN
 
     if query.data == "view":
-        rows = query_table(TABLE)
+        rows = query_table()
 
         message_text = ""
         index = 1
@@ -391,9 +388,11 @@ async def enter_website(update: Update, context: CustomContext):
         webhookId = create_webhook(
             network=context.network, contract=context.contract, filter="None"
         )
-        [name, symbol] = await getCollectionInfo(context.network, context.contract)
+        [name, slug] = await getCollectionInfo(context.network, context.contract)
+
         await add_config(
             name,
+            slug,
             context.network,
             context.contract,
             website,
@@ -406,13 +405,23 @@ async def enter_website(update: Update, context: CustomContext):
         )
 
     else:
+        webhookId = create_webhook(
+            network=context.network, contract=context.contract, filter="None"
+        )
+
+        [name, slug] = await getCollectionInfo(context.network, context.contract)
+        chats: list[str] = query_chats_by_contract(context.network, context.contract)
+        if update.effective_chat.id not in chats:
+            chats.append(update.effective_chat.id)
+
         await update_config(
-            "Updated",
+            name,
+            slug,
             context.network,
             context.contract,
             website,
-            "some id",
-            [update.effective_chat.id],
+            webhookId,
+            chats,
         )
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Collection updated."
@@ -443,11 +452,18 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    [chats, network] = query_network_by_webhook(TABLE, update.webhookId)
+    network = query_network_by_webhook(update.webhookId)
 
     [img, text] = await getMetadata(
-        update.contract, update.toAddress, update.tokenId, update.hash, network
+        network,
+        update.contract,
+        update.toAddress,
+        update.tokenId,
+        update.hash,
+        update.type,
     )
+
+    chats: list[str] = query_chats_by_contract(network, update.contract)
     for chat_id in chats:
         try:
             await context.bot.send_photo(

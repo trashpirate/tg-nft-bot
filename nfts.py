@@ -1,90 +1,133 @@
-from credentials import ALCHEMY_API_KEY_ETH, ALCHEMY_API_KEY_BASE, TABLE
+from credentials import (
+    ALCHEMY_API_KEY_ETH,
+    ALCHEMY_API_KEY_BASE,
+    OPENSEA_API_KEY,
+    TABLE,
+)
 import requests
 
-from models import query_website_by_contract
+from models import (
+    query_name_by_contract,
+    query_slug_by_contract,
+    query_website_by_contract,
+)
+from graphql import RPC
+import json
+
+OPENSEA_API = {
+    "ethereum-mainnet": "https://api.opensea.io/api/v2/chain/ethereum/",
+    "bnbchain-mainnet": "https://api.opensea.io/api/v2/chain/bsc/",
+    "base-mainnet": "https://api.opensea.io/api/v2/chain/base/",
+    "avalanche-mainnet": "https://api.opensea.io/api/v2/chain/avalanche/",
+    "arbitrum-mainnet": "https://api.opensea.io/api/v2/chain/arbitrum/",
+    "polygon-mainnet": "https://api.opensea.io/api/v2/chain/matic/",
+}
+
+OPENSEA_LINK = {
+    "ethereum-mainnet": "https://api.opensea.io/api/v2/chain/ethereum/",
+    "bnbchain-mainnet": "https://api.opensea.io/api/v2/chain/bsc/",
+    "base-mainnet": "https://api.opensea.io/api/v2/chain/base/",
+    "avalanche-mainnet": "https://api.opensea.io/api/v2/chain/avalanche/",
+    "arbitrum-mainnet": "https://api.opensea.io/api/v2/chain/arbitrum/",
+    "polygon-mainnet": "https://api.opensea.io/api/v2/chain/matic/",
+}
+
+RARIBLE = {
+    "ethereum-mainnet": "https://rarible.com/token/",
+    "bnbchain-mainnet": "https://rarible.com/token/bsc/",
+    "base-mainnet": "https://rarible.com/token/base/",
+    "avalanche-mainnet": "https://rarible.com/token/avalanche/",
+    "arbitrum-mainnet": "https://rarible.com/token/arbitrum/",
+    "polygon-mainnet": "https://rarible.com/token/matic/",
+}
+
+MAGIC_EDEN = {
+    "ethereum-mainnet": "https://magiceden.io/item-details/ethereum/",
+    "bnbchain-mainnet": "https://magiceden.io/item-details/bsc/",
+    "base-mainnet": "https://magiceden.io/item-details/base/",
+    "avalanche-mainnet": "https://magiceden.io/item-details/avalanche/",
+    "arbitrum-mainnet": "https://magiceden.io/item-details/arbitrum/",
+    "polygon-mainnet": "https://magiceden.io/item-details/matic/",
+}
+
+SCANS = {
+    "ethereum-mainnet": "https://etherscan.io",
+    "bnbchain-mainnet": "https://bscscan.com/",
+    "base-mainnet": "https://basescan.org/",
+    "avalanche-mainnet": "https://snowtrace.io/",
+    "arbitrum-mainnet": "https://arbiscan.io/",
+    "polygon-mainnet": "https://polygonscan.com/",
+}
 
 
 async def getCollectionInfo(chain, contract):
 
-    match chain:
-        case "ETH_MAINNET":
-            chain_tag = "eth-mainnet"
-        case "BASE_MAINNET":
-            chain_tag = "base-mainnet"
-        case _:
-            chain_tag = "eth-mainnet"
+    url = OPENSEA_API[chain] + "contract/" + contract
 
-    url = f"https://{chain_tag}.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_ETH}/getContractMetadata?contractAddress={contract}"
-
-    headers = {"accept": "application/json"}
-
-    response = requests.get(url, headers=headers)
-    data_json = response.json()
-    return [data_json["name"], data_json["symbol"]]
-
-
-async def getMetadata(contract, owner, tokenId, hash, chain):
-
-    match chain:
-        case "ETH_MAINNET":
-            url = f"https://eth-mainnet.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_ETH}/getNFTMetadata?contractAddress={contract}&tokenId={tokenId}"
-            opensea = f"https://opensea.io/assets/ethereum/{contract}/{tokenId}"
-            rarible = f"https://rarible.com/token/{contract}:{tokenId}"
-            magicEden = (
-                f"https://magiceden.io/item-details/ethereum/{contract}/{tokenId}"
-            )
-            etherscan = "https://etherscan.io/"
-        case "BASE_MAINNET":
-            url = f"https://base-mainnet.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_BASE}/getNFTMetadata?contractAddress={contract}&tokenId={tokenId}"
-            opensea = f"https://opensea.io/assets/base/{contract}/{tokenId}"
-            rarible = f"https://rarible.com/token/base/{contract}:{tokenId}"
-            magicEden = f"https://magiceden.io/item-details/base/{contract}/{tokenId}"
-            etherscan = "https://basescan.org/"
-        case _:
-            url = f"https://eth-mainnet.g.alchemy.com/nft/v3/{ALCHEMY_API_KEY_ETH}/getNFTMetadata?contractAddress={contract}&tokenId={tokenId}"
-            opensea = f"https://opensea.io/assets/ethereum/{contract}/{tokenId}"
-            rarible = f"https://rarible.com/token/{contract}:{tokenId}"
-            magicEden = (
-                f"https://magiceden.io/item-details/ethereum/{contract}/{tokenId}"
-            )
-            etherscan = "https://etherscan.io/"
-
-    headers = {"accept": "application/json"}
+    headers = {
+        "accept": "application/json",
+        "x-api-key": OPENSEA_API_KEY,
+    }
     response = requests.get(url, headers=headers)
     data_json = response.json()
 
-    contract_data = data_json["contract"]
-    collection_name = contract_data["name"]
-    total_supply = contract_data["totalSupply"]
+    return [data_json["name"], data_json["collection"]]
 
-    nft_name = data_json["name"]
-    nft_metadata = data_json["raw"]["metadata"]
-    nft_image = data_json["image"]["originalUrl"]
 
-    [_, website] = query_website_by_contract(TABLE, contract)
+async def getTotalSupply(slug):
+    url = "https://api.opensea.io/api/v2/collections/" + slug
 
-    title = (f"NEW {collection_name} MINT!").upper()
+    headers = {
+        "accept": "application/json",
+        "x-api-key": OPENSEA_API_KEY,
+    }
+    response = requests.get(url, headers=headers)
+    data_json = response.json()
+    return data_json["total_supply"]
+
+
+async def getMetadata(network, contract, owner, tokenId, hash, txType):
+
+    collection_name = query_name_by_contract(network, contract)
+    website = query_website_by_contract(contract)
+    slug = query_slug_by_contract(network, contract)
+    total_supply = getTotalSupply(slug)
+
+    # get opensea data
+    url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId
+    headers = {"accept": "application/json"}
+    response = requests.get(url, headers=headers)
+    data_json = response.json()
+    nft_data = data_json["nft"]
+
+    nft_name = nft_data["name"]
+    nft_image = nft_data["image_url"]
+
+    opensea = nft_data["opensea_url"]
+    rarible = RARIBLE[network] + contract + ":" + tokenId
+    magicEden = MAGIC_EDEN[network] + contract + "/" + tokenId
+    scan = SCANS[network]
+
+    if txType == "mint":
+        title = (f"NEW {collection_name} MINT!").upper()
+    else:
+        title = (f"NEW {collection_name} SELL!").upper()
+
     message = f"  \n<b>{title}</b>\n\n"
 
     message += (
-        '<a href="' + etherscan + "tx/" + hash + '">' + f"<b>{nft_name}</b>" + "</a>\n"
+        '<a href="' + scan + "tx/" + hash + '">' + f"<b>{nft_name}</b>" + "</a>\n"
     )
 
     message += f"Token ID: {tokenId}\n"
     short_address = f"{owner[:5]}...{owner[-3:]}"
     message += (
-        'Owner: <a href="'
-        + etherscan
-        + "address/"
-        + owner
-        + '">'
-        + short_address
-        + "</a>\n"
+        'Owner: <a href="' + scan + "address/" + owner + '">' + short_address + "</a>\n"
     )
 
-    if "attributes" in nft_metadata:
+    if "traits" in nft_data:
         message += "\n<u>Traits:</u>\n"
-        for attr in nft_metadata["attributes"]:
+        for attr in nft_data["traits"]:
             message += f'{attr["trait_type"]}: {attr["value"]}\n'
 
     message += f"\nTotal minted: {total_supply}\n"
