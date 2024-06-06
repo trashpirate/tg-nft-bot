@@ -1,13 +1,12 @@
 import asyncio
 from http import HTTPStatus
-from flask import Flask, Response, abort, make_response, request
+from flask import Response, request
 import uvicorn
 from asgiref.wsgi import WsgiToAsgi
-from web3 import Web3
 
 from bot import parse_tx, start_app, update_queue
-from models import CollectionConfigs, db, initial_config
-from credentials import DATABASE_URL, PORT, GROUP_IDS
+from models import initial_config
+from credentials import PORT
 
 from app import flask_app
 

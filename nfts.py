@@ -1,19 +1,11 @@
 from credentials import (
-    ALCHEMY_API_KEY_ETH,
-    ALCHEMY_API_KEY_BASE,
     OPENSEA_API_KEY,
-    TABLE,
 )
 import requests
 
 from models import (
     query_collection,
-    query_name_by_contract,
-    query_slug_by_contract,
-    query_website_by_contract,
 )
-from graphql import RPC
-import json
 
 OPENSEA_API = {
     "ethereum-mainnet": "https://api.opensea.io/api/v2/chain/ethereum/",

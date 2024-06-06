@@ -32,17 +32,15 @@ from models import (
     check_if_exists,
     delete_config_by_id,
     query_chats_by_contract,
-    query_collection,
     query_collection_by_chat,
     query_collection_by_webhook,
     query_table,
     update_chats_by_id,
     update_config,
 )
-from credentials import ADMIN_ID, TABLE, TOKEN, URL
+from credentials import TOKEN, URL
 from graphql import RPC, create_test_webhook, create_webhook, delete_webhook
 from nfts import getCollectionInfo, getMetadata
-from models import query_network_by_webhook
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
