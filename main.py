@@ -13,7 +13,7 @@ from app import flask_app
 
 async def main() -> None:
 
-    await initial_config()
+    initial_config()
 
     @flask_app.post("/telegram")
     async def telegram() -> Response:
