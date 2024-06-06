@@ -12,3 +12,5 @@ if DATABASE_URL.startswith("postgres://"):
 TABLE = str(os.getenv("TABLE"))
 QUICKNODE_API_KEY = str(os.getenv("QUICKNODE_API_KEY"))
 OPENSEA_API_KEY = str(os.getenv("OPENSEA_API_KEY"))
+
+TEST = str(os.getenv("TEST"))

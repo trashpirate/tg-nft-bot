@@ -137,7 +137,7 @@ async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
     message += '<a href="' + scan + "tx/" + hash + '">TX Hash</a> | '
     message += '<a href="' + scan + "token/" + contract + "#code" + '">Contract</a>\n'
 
-    if "traits" in nft_data:
+    if nft_data["traits"] is not None:
         message += "\n<u>Traits:</u>\n"
         for attr in nft_data["traits"]:
             message += f'{attr["trait_type"]}: {attr["value"]}\n'
@@ -152,5 +152,7 @@ async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
 
     message += '<a href="' + magicEden + '">MagicEden</a>\n'
 
+    message += "\n\nAD: "
+    message += '<a href="https://t.me/EARNCRYPTOALPHA">Subscribe to EARNCryptoAlpha Channel!</a>\n'
     message += "\n<i>Powered by @EARNServices</i>"
     return [nft_image, message]

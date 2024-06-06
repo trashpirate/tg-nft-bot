@@ -6,7 +6,7 @@ from asgiref.wsgi import WsgiToAsgi
 
 from bot import parse_tx, start_app, update_queue
 from models import initial_config
-from credentials import PORT
+from credentials import PORT, TEST
 
 from app import flask_app
 
@@ -54,6 +54,7 @@ async def main() -> None:
     async with bot:
         await bot.start()
         print("Bot started. Starting Server...")
+        print("Test mode: " + TEST)
         await webserver.serve()
         await bot.stop()
 

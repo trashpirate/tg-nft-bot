@@ -38,7 +38,7 @@ from models import (
     update_chats_by_id,
     update_config,
 )
-from credentials import TOKEN, URL
+from credentials import TEST, TOKEN, URL
 from graphql import RPC, create_test_webhook, create_webhook, delete_webhook
 from nfts import getCollectionInfo, getMetadata
 
@@ -464,9 +464,11 @@ async def enter_website(update: Update, context: CustomContext):
     if website == context.contract:
         return WEBSITE
 
-    webhookId = create_test_webhook(
-        network=context.network, contract=context.contract, filter="None"
-    )
+    print(TEST)
+    if TEST == "true":
+        webhookId = create_test_webhook(
+            network=context.network, contract=context.contract
+        )
 
     entry = await check_if_exists(context.network, context.contract)
 
@@ -474,9 +476,7 @@ async def enter_website(update: Update, context: CustomContext):
         # TODO:
         # check if contract exists
 
-        webhookId = create_webhook(
-            network=context.network, contract=context.contract, filter="None"
-        )
+        webhookId = create_webhook(network=context.network, contract=context.contract)
         [name, slug] = await getCollectionInfo(context.network, context.contract)
 
         await add_config(
@@ -494,9 +494,7 @@ async def enter_website(update: Update, context: CustomContext):
         )
 
     else:
-        webhookId = create_webhook(
-            network=context.network, contract=context.contract, filter="None"
-        )
+        webhookId = create_webhook(network=context.network, contract=context.contract)
 
         [name, slug] = await getCollectionInfo(context.network, context.contract)
         chats: list[str] = query_chats_by_contract(context.network, context.contract)

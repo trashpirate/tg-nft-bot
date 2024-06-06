@@ -94,7 +94,7 @@ def activate_webhook(id):
     print(response.text)
 
 
-def create_webhook(network, contract, filter):
+def create_webhook(network, contract):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
@@ -148,19 +148,18 @@ def create_webhook(network, contract, filter):
                 "retry_interval_sec": 1,
                 "post_timeout_sec": 10,
             },
-            "status": "paused",
+            "status": "active",
         }
 
         response = post_quicknode(payload, url)
         data_json = response.json()
-        pause_webhook(data_json["id"])
         return data_json["id"]
 
     else:
         return stream_id
 
 
-def create_test_webhook(network, contract, filter):
+def create_test_webhook(network, contract):
     # network = "ethereum-mainnet"
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
 
@@ -170,6 +169,9 @@ def create_test_webhook(network, contract, filter):
     # purchase
     # "start_range": 20025604,
     # "end_range": 20025606,
+    # mint
+    # "start_range": 19628336,
+    #     "end_range": 19628338,
 
     filter = getQuickNodeFilter(contract)
     url = "https://api.quicknode.com/streams/rest/v1/streams"
@@ -180,8 +182,8 @@ def create_test_webhook(network, contract, filter):
         "dataset": "receipts",
         "filter_function": filter,
         "region": "usa_east",
-        "start_range": 19628336,
-        "end_range": 19628338,
+        "start_range": 14724597,
+        "end_range": 14724599,
         "dataset_batch_size": 1,
         "include_stream_metadata": "body",
         "destination": "webhook",
