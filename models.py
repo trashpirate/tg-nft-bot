@@ -18,7 +18,7 @@ class CollectionConfigs(db.Model):
     network = db.Column(db.String(255), nullable=True)
     contract = db.Column(db.String(255), nullable=True)
     website = db.Column(db.String(255), nullable=True)
-    webhookid = db.Column(db.String(255), nullable=True)
+    webhookId = db.Column(db.String(255), nullable=True)
     chats = db.Column(db.ARRAY(db.BigInteger), nullable=True)
 
 
@@ -26,7 +26,71 @@ def query_table():
     with flask_app.app_context():
         collections = CollectionConfigs.query.all()
         collection_list = [
-            [collection.name, collection.contract, collection.network]
+            {
+                "id": collection.id,
+                "name": collection.name,
+                "slug": collection.slug,
+                "contract": collection.contract,
+                "network": collection.network,
+                "website": collection.website,
+                "webhookId": collection.webhookId,
+                "chats": collection.chats,
+            }
+            for collection in collections
+        ]
+    return collection_list
+
+
+def query_collection(network, contract):
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+        collection_dict = {
+            "id": collection.id,
+            "name": collection.name,
+            "slug": collection.slug,
+            "contract": collection.contract,
+            "network": collection.network,
+            "website": collection.website,
+            "webhookId": collection.webhookId,
+            "chats": collection.chats,
+        }
+    return collection_dict
+
+
+def query_collection_by_webhook(webhookId):
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+        collection_dict = {
+            "id": collection.id,
+            "name": collection.name,
+            "slug": collection.slug,
+            "contract": collection.contract,
+            "network": collection.network,
+            "website": collection.website,
+            "webhookId": collection.webhookId,
+            "chats": collection.chats,
+        }
+    return collection_dict
+
+
+def query_collection_by_chat(chatId):
+    with flask_app.app_context():
+        collections = CollectionConfigs.query.filter(
+            CollectionConfigs.chats.any(chatId)
+        ).all()
+        collection_list = [
+            {
+                "id": collection.id,
+                "name": collection.name,
+                "slug": collection.slug,
+                "contract": collection.contract,
+                "network": collection.network,
+                "website": collection.website,
+                "webhookId": collection.webhookId,
+                "chats": collection.chats,
+            }
             for collection in collections
         ]
     return collection_list
@@ -107,13 +171,13 @@ async def check_if_exists(network, contract):
 async def initial_config():
     print("initializing app with database...")
     db.init_app(flask_app)
-    # with flask_app.app_context():
-    #     db.drop_all()
-    #     db.create_all()
-    #     db.session.commit()
+    with flask_app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.commit()
 
 
-async def add_config(name, slug, network, contract, website, webhookid, ids):
+async def add_config(name, slug, network, contract, website, webhookId, chats):
 
     with flask_app.app_context():
         config = CollectionConfigs(
@@ -122,14 +186,14 @@ async def add_config(name, slug, network, contract, website, webhookid, ids):
             network=network,
             contract=Web3.to_checksum_address(contract),
             website=website,
-            webhookid=webhookid,
-            chats=ids,
+            webhookId=webhookId,
+            chats=chats,
         )
         db.session.add(config)
         db.session.commit()
 
 
-async def update_config(name, slug, network, contract, website, webhookid, ids):
+async def update_config(name, slug, network, contract, website, webhookId, chats):
 
     with flask_app.app_context():
 
@@ -141,6 +205,15 @@ async def update_config(name, slug, network, contract, website, webhookid, ids):
         row_to_update.network = network
         row_to_update.contract = Web3.to_checksum_address(contract)
         row_to_update.website = website
-        row_to_update.webhookid = webhookid
-        row_to_update.chats = ids
+        row_to_update.webhookId = webhookId
+        row_to_update.chats = chats
+        db.session.commit()
+
+
+async def update_chats_by_id(id, chats):
+    with flask_app.app_context():
+        collection_update = CollectionConfigs.query.filter(
+            CollectionConfigs.id == id
+        ).one()
+        collection_update.chats = chats
         db.session.commit()

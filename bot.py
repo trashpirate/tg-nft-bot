@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from telegram import (
+    ChatMember,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Update,
@@ -18,23 +19,27 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
-    InlineQueryHandler,
+    ChatMemberHandler,
     CallbackContext,
     ExtBot,
     TypeHandler,
     CallbackQueryHandler,
     Application,
 )
-from web3 import Web3
+from web3 import HTTPProvider, Web3
 from models import (
     add_config,
     check_if_exists,
     query_chats_by_contract,
+    query_collection,
+    query_collection_by_chat,
+    query_collection_by_webhook,
     query_table,
+    update_chats_by_id,
     update_config,
 )
 from credentials import ADMIN_ID, TABLE, TOKEN, URL
-from graphql import create_webhook
+from graphql import RPC, create_test_webhook, create_webhook
 from nfts import getCollectionInfo, getMetadata
 from models import query_network_by_webhook
 
@@ -183,6 +188,7 @@ class WebhookUpdate:
     toAddress: str
     hash: str
     type: str
+    value: float
 
 
 # functions
@@ -190,59 +196,96 @@ async def parse_tx(json_data):
 
     # webhook id
     webhookId = json_data["metadata"]["stream_id"]
+    network = json_data["metadata"]["network"]
     receipts = json_data["data"][0]["receipts"]
 
     for receipt in receipts:
-
         for log in receipt["logs"]:
-            # contract address
-            contract = Web3.to_checksum_address(log["address"])
-            # from address
-            fromAddress = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
-            if fromAddress == "0x0000000000000000000000000000000000000000":
-                txType = "mint"
-            else:
-                # TODO:
-                # use value from transaction to check if sold - exclude pure transfers
-                txType = "transfer"
-            # owner address
-            toAddress = Web3.to_checksum_address("0x" + log["topics"][2][-40:])
-            # tokenId
-            tokenId = int(log["topics"][3], 16)
-            # transaction hash
-            hash = log["transactionHash"]
 
-            await application.update_queue.put(
-                WebhookUpdate(
-                    webhookId=webhookId,
-                    tokenId=tokenId,
-                    contract=contract,
-                    fromAddress=fromAddress,
-                    toAddress=toAddress,
-                    hash=hash,
-                    type=txType,
+            topics = log["topics"]
+            if (
+                len(topics) == 4
+                and topics[0]
+                == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+            ):
+
+                # contract address
+                contract = Web3.to_checksum_address(log["address"])
+                # from address
+                fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
+                # owner address
+                toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
+                # tokenId
+                tokenId = int(topics[3], 16)
+                # transaction hash
+                hash = log["transactionHash"]
+                # eth value
+                value = 0
+
+                # check if mint or purchase
+                if fromAddress == "0x0000000000000000000000000000000000000000":
+                    txType = "mint"
+                else:
+                    # TODO:
+                    # use value from transaction to check if sold - exclude pure transfers
+                    w3 = Web3(HTTPProvider(RPC[network]))
+                    tx = w3.eth.get_transaction(hash)
+                    value = Web3.from_wei(tx["value"], "ether")
+                    if value > 0:
+                        txType = "purchase"
+                    else:
+                        return
+
+                await application.update_queue.put(
+                    WebhookUpdate(
+                        webhookId=webhookId,
+                        tokenId=tokenId,
+                        contract=contract,
+                        fromAddress=fromAddress,
+                        toAddress=toAddress,
+                        hash=hash,
+                        type=txType,
+                        value=value,
+                    )
                 )
-            )
 
 
-def button_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
+async def bot_removed(update: Update, context: CallbackContext) -> None:
+    # Extract the new and old status of the bot
+    old_status = update.my_chat_member.old_chat_member.status
+    new_status = update.my_chat_member.new_chat_member.status
 
-    selected_option = query.data
-    query.edit_message_text(text=f"You selected: {selected_option}")
+    if old_status in [ChatMember.ADMINISTRATOR, ChatMember.MEMBER] and (
+        new_status == ChatMember.BANNED or new_status == ChatMember.LEFT
+    ):
+        # get chats from database
+        # remove chat from database
+        # delete webhook if no chat left
+        collections = query_collection_by_chat(update.effective_chat.id)
+        print(collections)
+        for collection in collections:
+            new_chats = []
+            for chat in collection["chats"]:
+                if chat != update.effective_chat.id:
+                    new_chats.append(chat)
+
+            await update_chats_by_id(collection["id"], new_chats)
+
+        chat_title = update.effective_chat.title
+        print(chat_title)
+        # Perform your logic here
+        # await context.bot.send_message(
+        #     chat_id=update.effective_chat.id,
+        #     text=f"I have been removed from the group: {chat_title}",
+        # )
 
 
 async def start(update: Update, context: CustomContext):
 
-    # webhookId = create_webhook(
-    #     network="ethereum-mainnet",
-    #     contract="0x12a961e8cc6c94ffd0ac08deb9cde798739cf775",
-    #     filter="None",
-    # )
-
-    isPrivate = update.effective_chat.type == "private"
-    if not isPrivate:
+    if (
+        update.effective_chat.type == "group"
+        or update.effective_chat.type == "supergroup"
+    ):
         admins = await update.effective_chat.get_administrators()
         admin_ids = [admin["user"]["id"] for admin in admins]
 
@@ -252,14 +295,35 @@ async def start(update: Update, context: CustomContext):
                 text="You are not authorized to configure this bot.",
             )
             return ConversationHandler.END
+        else:
+            group_chat_id = update.effective_chat.id
+            bot_username = context.bot.username
+            message = (
+                "To configure bot: "
+                f"[Click here](https://t.me/{bot_username}?start={group_chat_id})"
+            )
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message,
+                parse_mode=ParseMode.MARKDOWN,
+            )
 
-    [reply_markup, message_text] = main_menu()
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message_text,
-        reply_markup=reply_markup,
-    )
-    return MAIN
+    elif update.effective_chat.type == "private":
+        if context.args:
+            context.chat = context.args[0]
+            [reply_markup, message_text] = main_menu()
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_text,
+                reply_markup=reply_markup,
+            )
+            return MAIN
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="To configure the bot, start the bot in the group where you want to configure it and click on the link in the group message.",
+            )
+            return ConversationHandler.END
 
 
 async def select_action(update: Update, context: CustomContext):
@@ -285,28 +349,50 @@ async def select_action(update: Update, context: CustomContext):
         return MAIN
 
     if query.data == "view":
-        rows = query_table()
+        rows: list[dict] = query_table()
 
-        message_text = ""
-        index = 1
-        for r in rows:
-            message_text += f"Config {index}:\n{r[0]} ({r[2]})\n{r[1]}\n\n"
-            index += 1
+        if len(rows) > 0:
+            message_text = ""
+            index = 1
+            for r in rows:
+                name = r["name"]
+                network = r["network"]
+                contract = r["contract"]
+                website = r["website"]
+                chats = r["chats"]
 
-        reply_markup = return_menu()
+                message_text += f"Config {index}:\nName: {name}\nNetwork: {network}\nCA: {contract}\nWebsite: {website}\nChats: "
 
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=message_text,
-            reply_markup=reply_markup,
-        )
+                for chat in chats:
+                    group_chat = await context.bot.get_chat(chat)
+                    if group_chat.title is None:
+                        chat_name = group_chat.username
+                    else:
+                        chat_name = group_chat.title
+                    message_text += chat_name + ", "
+
+                message_text = message_text[:-2] + "\n\n"
+                index += 1
+
+            reply_markup = return_menu()
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_text,
+                reply_markup=reply_markup,
+            )
+
+        else:
+            reply_markup = return_menu()
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="No configurations found.",
+                reply_markup=reply_markup,
+            )
 
         return MAIN
 
     if query.data == "new":
-        context.chat = update.effective_chat.id
-        chat_ids.append(update.effective_chat.id)
-
         [reply_markup, message_text] = network_menu()
 
         await context.bot.send_message(
@@ -379,6 +465,10 @@ async def enter_website(update: Update, context: CustomContext):
     if website == context.contract:
         return WEBSITE
 
+    webhookId = create_test_webhook(
+        network=context.network, contract=context.contract, filter="None"
+    )
+
     entry = await check_if_exists(context.network, context.contract)
 
     if entry is None:
@@ -397,7 +487,7 @@ async def enter_website(update: Update, context: CustomContext):
             context.contract,
             website,
             webhookId,
-            [update.effective_chat.id],
+            [context.chat],
         )
 
         await context.bot.send_message(
@@ -411,8 +501,8 @@ async def enter_website(update: Update, context: CustomContext):
 
         [name, slug] = await getCollectionInfo(context.network, context.contract)
         chats: list[str] = query_chats_by_contract(context.network, context.contract)
-        if update.effective_chat.id not in chats:
-            chats.append(update.effective_chat.id)
+        if context.chat not in chats:
+            chats.append(context.chat)
 
         await update_config(
             name,
@@ -452,7 +542,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    network = query_network_by_webhook(update.webhookId)
+
+    collection = query_collection_by_webhook(update.webhookId)
+    network = collection["network"]
 
     [img, text] = await getMetadata(
         network,
@@ -461,9 +553,10 @@ async def webhook_update(
         update.tokenId,
         update.hash,
         update.type,
+        update.value,
     )
 
-    chats: list[str] = query_chats_by_contract(network, update.contract)
+    chats: list[str] = collection["chats"]
     for chat_id in chats:
         try:
             await context.bot.send_photo(
@@ -495,6 +588,7 @@ async def start_app():
     )
 
     # define handlers
+
     # start_handler = CommandHandler("start", start)
     # webhook_handler = CommandHandler("webhook", webhook)
 
@@ -503,6 +597,9 @@ async def start_app():
     # application.add_handler(webhook_handler)
     application.add_handler(conv_handler)
     application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
+    application.add_handler(
+        ChatMemberHandler(bot_removed, ChatMemberHandler.MY_CHAT_MEMBER)
+    )
 
     # webhooks
     await application.bot.set_webhook(

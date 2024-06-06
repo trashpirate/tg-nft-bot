@@ -27,17 +27,17 @@ async def main() -> None:
     async def nft_udpates() -> Response:
         # Handle incoming NFT updates by putting them into the `update_queue`
         json_data = request.json
-        try:
-            json_data = request.json
-            if len(json_data["data"][0]["receipts"]) == 0:
-                print("No new data.")
-            else:
-                await parse_tx(json_data)
-            return Response(status=HTTPStatus.OK)
+        # try:
+        json_data = request.json
+        if len(json_data["data"][0]["receipts"]) == 0:
+            print("No new data.")
+        else:
+            await parse_tx(json_data)
+        return Response(status=HTTPStatus.OK)
 
-        except:
-            print("Invalid request.")
-            return Response(status=HTTPStatus.OK)
+        # except:
+        #     print("Invalid request.")
+        #     return Response(status=HTTPStatus.OK)
 
     webserver = uvicorn.Server(
         config=uvicorn.Config(

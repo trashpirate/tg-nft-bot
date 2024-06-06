@@ -21,7 +21,7 @@ def getQuickNodeFilter(contractAddress):
             var filteredReceipts = [];
             data.forEach(receipt => {
                 let relevantLogs = receipt.logs.filter(log =>
-                    log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" && log.address.toLowerCase() === contractAddress.toLowerCase()
+                    log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" && log.address.toLowerCase() === contractAddress.toLowerCase() && log.topics.length === 4
                 );
                 if (relevantLogs.length > 0) {
                     filteredReceipts.push(receipt);
@@ -131,7 +131,7 @@ def activate_webhook(id):
 def create_webhook(network, contract, filter):
 
     stream_id = None
-    stream_name = network + "-" + contract
+    stream_name = network + "-" + Web3.to_checksum_address(contract)
     streams = get_quicknode_streams()
     if streams is not None:
         for stream in streams:
@@ -160,7 +160,7 @@ def create_webhook(network, contract, filter):
         url = "https://api.quicknode.com/streams/rest/v1/streams"
 
         payload = {
-            "name": network + "-" + Web3.to_checksum_address(contract),
+            "name": stream_name,
             "network": network,
             "dataset": "receipts",
             "filter_function": filter,
@@ -192,6 +192,51 @@ def create_webhook(network, contract, filter):
 
     else:
         return stream_id
+
+
+def create_test_webhook(network, contract, filter):
+    # network = "ethereum-mainnet"
+    # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
+
+    # transfer
+    # "start_range": 19976946,
+    # "end_range": 19976948,
+    # purchase
+    # "start_range": 20025604,
+    # "end_range": 20025606,
+
+    filter = getQuickNodeFilter(contract)
+    url = "https://api.quicknode.com/streams/rest/v1/streams"
+
+    payload = {
+        "name": network + "-" + Web3.to_checksum_address(contract),
+        "network": network,
+        "dataset": "receipts",
+        "filter_function": filter,
+        "region": "usa_east",
+        "start_range": 19628336,
+        "end_range": 19628338,
+        "dataset_batch_size": 1,
+        "include_stream_metadata": "body",
+        "destination": "webhook",
+        "fix_block_reorgs": 0,
+        "keep_distance_from_tip": 0,
+        "destination_attributes": {
+            "url": f"{URL}/nfts",
+            "compression": "none",
+            "headers": {
+                "Content-Type": "application/json",
+            },
+            "max_retry": 3,
+            "retry_interval_sec": 1,
+            "post_timeout_sec": 10,
+        },
+        "status": "active",
+    }
+
+    response = post_quicknode(payload, url)
+    data_json = response.json()
+    return data_json["id"]
 
 
 # def create_webhook(network, contract, filter):

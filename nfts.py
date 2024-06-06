@@ -7,6 +7,7 @@ from credentials import (
 import requests
 
 from models import (
+    query_collection,
     query_name_by_contract,
     query_slug_by_contract,
     query_website_by_contract,
@@ -51,12 +52,21 @@ MAGIC_EDEN = {
 }
 
 SCANS = {
-    "ethereum-mainnet": "https://etherscan.io",
+    "ethereum-mainnet": "https://etherscan.io/",
     "bnbchain-mainnet": "https://bscscan.com/",
     "base-mainnet": "https://basescan.org/",
     "avalanche-mainnet": "https://snowtrace.io/",
     "arbitrum-mainnet": "https://arbiscan.io/",
     "polygon-mainnet": "https://polygonscan.com/",
+}
+
+CURRENCY = {
+    "ethereum-mainnet": "ETH",
+    "bnbchain-mainnet": "BNB",
+    "base-mainnet": "ETH",
+    "avalanche-mainnet": "AVAX",
+    "arbitrum-mainnet": "ETH",
+    "polygon-mainnet": "MATIC",
 }
 
 
@@ -86,18 +96,30 @@ async def getTotalSupply(slug):
     return data_json["total_supply"]
 
 
-async def getMetadata(network, contract, owner, tokenId, hash, txType):
+async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
 
-    collection_name = query_name_by_contract(network, contract)
-    website = query_website_by_contract(contract)
-    slug = query_slug_by_contract(network, contract)
-    total_supply = getTotalSupply(slug)
+    tokenId = str(tokenId)
+    collection = query_collection(network, contract)
+
+    collection_name = collection["name"]
+    slug = collection["slug"]
+
+    if len(collection["website"]) > 8:
+        website = collection["website"]
+    else:
+        website = "https://opensea.io/collection/" + slug
+
+    total_supply = await getTotalSupply(slug)
 
     # get opensea data
     url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId
-    headers = {"accept": "application/json"}
+    headers = {
+        "accept": "application/json",
+        "x-api-key": OPENSEA_API_KEY,
+    }
     response = requests.get(url, headers=headers)
     data_json = response.json()
+
     nft_data = data_json["nft"]
 
     nft_name = nft_data["name"]
@@ -109,21 +131,25 @@ async def getMetadata(network, contract, owner, tokenId, hash, txType):
     scan = SCANS[network]
 
     if txType == "mint":
-        title = (f"NEW {collection_name} MINT!").upper()
+        title = (f"NEW {collection_name} MINT! 🔥").upper()
+        message = f"\n<b>{title}</b>\n\n"
     else:
-        title = (f"NEW {collection_name} SELL!").upper()
+        title = (f"NEW {collection_name} PURCHASE! 🔥").upper()
+        message = f"\n<b>{title}</b>\n"
+        message += f"Price: {value:.3f} {CURRENCY[network]}\n\n"
 
-    message = f"  \n<b>{title}</b>\n\n"
-
-    message += (
-        '<a href="' + scan + "tx/" + hash + '">' + f"<b>{nft_name}</b>" + "</a>\n"
-    )
+    # message += '<a href="' + opensea + '">' + f"<b>{nft_name}</b>" + "</a>\n"
+    message += f"\n<u><b>{nft_name}</b></u>\n"
 
     message += f"Token ID: {tokenId}\n"
-    short_address = f"{owner[:5]}...{owner[-3:]}"
-    message += (
-        'Owner: <a href="' + scan + "address/" + owner + '">' + short_address + "</a>\n"
-    )
+    # short_address = f"{owner[:5]}...{owner[-3:]}"
+    # message += (
+    #     'Owner: <a href="' + scan + "address/" + owner + '">' + short_address + "</a>\n"
+    # )
+
+    message += '<a href="' + scan + "address/" + owner + '">Owner</a> | '
+    message += '<a href="' + scan + "tx/" + hash + '">TX Hash</a> | '
+    message += '<a href="' + scan + "address/" + contract + '">Contract</a>\n'
 
     if "traits" in nft_data:
         message += "\n<u>Traits:</u>\n"
