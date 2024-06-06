@@ -138,18 +138,12 @@ async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
         message = f"\n<b>{title}</b>\n"
         message += f"Price: {value:.3f} {CURRENCY[network]}\n\n"
 
-    # message += '<a href="' + opensea + '">' + f"<b>{nft_name}</b>" + "</a>\n"
     message += f"\n<u><b>{nft_name}</b></u>\n"
-
     message += f"Token ID: {tokenId}\n"
-    # short_address = f"{owner[:5]}...{owner[-3:]}"
-    # message += (
-    #     'Owner: <a href="' + scan + "address/" + owner + '">' + short_address + "</a>\n"
-    # )
 
     message += '<a href="' + scan + "address/" + owner + '">Owner</a> | '
     message += '<a href="' + scan + "tx/" + hash + '">TX Hash</a> | '
-    message += '<a href="' + scan + "address/" + contract + '">Contract</a>\n'
+    message += '<a href="' + scan + "token/" + contract + "#code" + '">Contract</a>\n'
 
     if "traits" in nft_data:
         message += "\n<u>Traits:</u>\n"
