@@ -18,10 +18,11 @@ async def main() -> None:
 
     # get all the configured chats and create the webhook routes on restart
     collection_list = query_table()
-
+    print(collection_list)
     if len(collection_list) > 0:
         for collection in collection_list:
             create_webhook_route("/" + collection["slug"])
+            print("route: " + collection["slug"])
 
     @flask_app.post("/telegram")
     async def telegram() -> Response:
