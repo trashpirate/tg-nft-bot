@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from http import HTTPStatus
 import logging
 from typing import Optional
 
+from flask import Response, request
+from werkzeug.routing import Rule
 from telegram import (
     ChatMember,
     InlineKeyboardButton,
@@ -41,6 +44,7 @@ from models import (
 from credentials import TEST, TOKEN, URL
 from graphql import RPC, create_test_webhook, create_webhook, delete_webhook
 from nfts import getCollectionInfo, getMetadata
+from app import flask_app
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -197,6 +201,23 @@ class WebhookData:
     hash: str
     type: str
     value: float
+
+
+# Define a function to dynamically create a new webhook route
+def create_webhook_route(route):
+
+    if route not in [rule.rule for rule in flask_app.url_map.iter_rules()]:
+
+        flask_app.url_map.add(Rule(route, endpoint=route))
+
+        # @flask_app.route(route, methods=["GET", "POST"])
+        async def nft_updates() -> Response:
+            json_data = request.json
+            await update_webhook_queue(json_data)
+            return Response(status=HTTPStatus.OK)
+
+        flask_app.view_functions[route] = nft_updates
+        print("Webhook route created: " + route)
 
 
 # functions
@@ -475,20 +496,23 @@ async def enter_website(update: Update, context: CustomContext):
     if website == context.contract:
         return WEBSITE
 
-    print(TEST)
+    [name, slug] = getCollectionInfo(context.network, context.contract)
+    route = "/" + slug
+    create_webhook_route(route)
+
     if TEST == "true":
         webhookId = create_test_webhook(
-            network=context.network, contract=context.contract
+            network=context.network, contract=context.contract, route=route
         )
 
     entry = check_if_exists(context.network, context.contract)
+    webhookId = create_webhook(
+        network=context.network, contract=context.contract, route=route
+    )
 
     if entry is None:
         # TODO:
         # check if contract exists
-
-        webhookId = create_webhook(network=context.network, contract=context.contract)
-        [name, slug] = getCollectionInfo(context.network, context.contract)
 
         add_config(
             name,
@@ -505,9 +529,7 @@ async def enter_website(update: Update, context: CustomContext):
         )
 
     else:
-        webhookId = create_webhook(network=context.network, contract=context.contract)
 
-        [name, slug] = getCollectionInfo(context.network, context.contract)
         chats: list[str] = query_chats_by_contract(context.network, context.contract)
         if context.chat not in chats:
             chats.append(context.chat)
