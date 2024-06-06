@@ -196,7 +196,7 @@ async def parse_tx(json_data):
     # webhook id
     webhookId = json_data["metadata"]["stream_id"]
     network = json_data["metadata"]["network"]
-    receipts = json_data["data"][0]["receipts"]
+    receipts = json_data["data"][0]["content"]["receipts"]
 
     for receipt in receipts:
         for log in receipt["logs"]:

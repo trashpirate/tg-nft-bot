@@ -28,8 +28,8 @@ async def main() -> None:
         json_data = request.json
         # try:
         json_data = request.json
-        print(json_data)
-        if len(json_data["data"][0]["receipts"]) == 0:
+        # print(json_data["data"][0]["content"]["receipts"])
+        if len(json_data["data"][0]["content"]["receipts"]) < 1:
             print("No new data.")
         else:
             await parse_tx(json_data)

@@ -1,5 +1,5 @@
 import requests
-from credentials import QUICKNODE_API_KEY, URL
+from credentials import QUICKNODE_API_KEY, TEST, URL
 import base64
 from web3 import HTTPProvider, Web3
 
@@ -98,6 +98,8 @@ def create_webhook(network, contract):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
+    if TEST == "true":
+        stream_name += "-test"
     streams = get_quicknode_streams()
     if streams is not None:
         for stream in streams:
@@ -177,7 +179,7 @@ def create_test_webhook(network, contract):
     url = "https://api.quicknode.com/streams/rest/v1/streams"
 
     payload = {
-        "name": network + "-" + Web3.to_checksum_address(contract),
+        "name": network + "-" + Web3.to_checksum_address(contract) + "-test",
         "network": network,
         "dataset": "receipts",
         "filter_function": filter,
