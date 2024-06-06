@@ -1,54 +1,227 @@
 from flask_sqlalchemy import SQLAlchemy
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from web3 import Web3
 
-from credentials import DATABASE_URL
+from credentials import TABLE
 
 db = SQLAlchemy()
+from app import flask_app
 
 
 class CollectionConfigs(db.Model):
-    __tablename__ = "collections"
+    __tablename__ = TABLE
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    network = db.Column(db.String(255), nullable=False)
-    address = db.Column(db.String(255), nullable=False)
-    website = db.Column(db.String(255), nullable=False)
-    webhookid = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=True)
+    slug = db.Column(db.String(255), nullable=True)
+    network = db.Column(db.String(255), nullable=True)
+    contract = db.Column(db.String(255), nullable=True)
+    website = db.Column(db.String(255), nullable=True)
+    webhookId = db.Column(db.String(255), nullable=True)
     chats = db.Column(db.ARRAY(db.BigInteger), nullable=True)
 
 
-def connect_to_db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode="prefer")
-    return conn
+def query_table():
+    with flask_app.app_context():
+        collections = CollectionConfigs.query.all()
+        collection_list = [
+            {
+                "id": collection.id,
+                "name": collection.name,
+                "slug": collection.slug,
+                "contract": collection.contract,
+                "network": collection.network,
+                "website": collection.website,
+                "webhookId": collection.webhookId,
+                "chats": collection.chats,
+            }
+            for collection in collections
+        ]
+    return collection_list
 
 
-def query_table(table_name):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {table_name}")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return rows
+def query_collection(network, contract):
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+        collection_dict = {
+            "id": collection.id,
+            "name": collection.name,
+            "slug": collection.slug,
+            "contract": collection.contract,
+            "network": collection.network,
+            "website": collection.website,
+            "webhookId": collection.webhookId,
+            "chats": collection.chats,
+        }
+    return collection_dict
 
 
-def query_network_by_webhook(table_name, webhookId):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {table_name} WHERE webhookid='{webhookId}'")
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return [result.get("chats"), result.get("network")] if result else None
+def query_collection_by_webhook(webhookId):
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+        collection_dict = {
+            "id": collection.id,
+            "name": collection.name,
+            "slug": collection.slug,
+            "contract": collection.contract,
+            "network": collection.network,
+            "website": collection.website,
+            "webhookId": collection.webhookId,
+            "chats": collection.chats,
+        }
+    return collection_dict
 
 
-def query_website_by_contract(table_name, contract):
-    conn = connect_to_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(f"SELECT * FROM {table_name} WHERE address='{contract}'")
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return [result.get("chats"), result.get("website")] if result else None
+def query_collection_by_chat(chatId):
+    with flask_app.app_context():
+        collections = CollectionConfigs.query.filter(
+            CollectionConfigs.chats.any(chatId)
+        ).all()
+        collection_list = [
+            {
+                "id": collection.id,
+                "name": collection.name,
+                "slug": collection.slug,
+                "contract": collection.contract,
+                "network": collection.network,
+                "website": collection.website,
+                "webhookId": collection.webhookId,
+                "chats": collection.chats,
+            }
+            for collection in collections
+        ]
+    return collection_list
+
+
+def query_network_by_webhook(webhookId):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.network
+
+
+def query_website_by_contract(contract, network):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.website
+
+
+def query_name_by_contract(network, contract):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.name
+
+
+def query_slug_by_contract(network, contract):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.slug
+
+
+def query_chats_by_contract(network, contract):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.chats
+
+
+async def check_if_exists(network, contract):
+
+    with flask_app.app_context():
+
+        entry = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.id
+
+
+async def initial_config():
+    print("initializing app with database...")
+    db.init_app(flask_app)
+    with flask_app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.commit()
+
+
+async def add_config(name, slug, network, contract, website, webhookId, chats):
+
+    with flask_app.app_context():
+        config = CollectionConfigs(
+            name=name,
+            slug=slug,
+            network=network,
+            contract=Web3.to_checksum_address(contract),
+            website=website,
+            webhookId=webhookId,
+            chats=chats,
+        )
+        db.session.add(config)
+        db.session.commit()
+
+
+async def update_config(name, slug, network, contract, website, webhookId, chats):
+
+    with flask_app.app_context():
+
+        row_to_update = CollectionConfigs.query.filter_by(
+            contract=contract, network=network
+        ).first()
+        row_to_update.name = name
+        row_to_update.slug = slug
+        row_to_update.network = network
+        row_to_update.contract = Web3.to_checksum_address(contract)
+        row_to_update.website = website
+        row_to_update.webhookId = webhookId
+        row_to_update.chats = chats
+        db.session.commit()
+
+
+async def update_chats_by_id(id, chats):
+    with flask_app.app_context():
+        collection_update = CollectionConfigs.query.filter(
+            CollectionConfigs.id == id
+        ).one()
+        collection_update.chats = chats
+        db.session.commit()
+
+
+async def delete_config_by_id(id):
+
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter(CollectionConfigs.id == id).one()
+        db.session.delete(collection)
+        db.session.commit()
