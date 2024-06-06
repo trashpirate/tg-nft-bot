@@ -62,7 +62,7 @@ CURRENCY = {
 }
 
 
-async def getCollectionInfo(chain, contract):
+def getCollectionInfo(chain, contract):
 
     url = OPENSEA_API[chain] + "contract/" + contract
 
@@ -76,7 +76,7 @@ async def getCollectionInfo(chain, contract):
     return [data_json["name"], data_json["collection"]]
 
 
-async def getTotalSupply(slug):
+def getTotalSupply(slug):
     url = "https://api.opensea.io/api/v2/collections/" + slug
 
     headers = {
@@ -88,7 +88,7 @@ async def getTotalSupply(slug):
     return data_json["total_supply"]
 
 
-async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
+def getMetadata(network, contract, owner, tokenId, hash, txType, value):
 
     tokenId = str(tokenId)
     collection = query_collection(network, contract)
@@ -101,7 +101,7 @@ async def getMetadata(network, contract, owner, tokenId, hash, txType, value):
     else:
         website = "https://opensea.io/collection/" + slug
 
-    total_supply = await getTotalSupply(slug)
+    total_supply = getTotalSupply(slug)
 
     # get opensea data
     url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId

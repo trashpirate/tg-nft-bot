@@ -22,6 +22,14 @@ class CollectionConfigs(db.Model):
     chats = db.Column(db.ARRAY(db.BigInteger), nullable=True)
 
 
+# class BotAuthorizations(db.Model):
+#     __tablename__ = "authorizations"
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(255), nullable=True)
+#     tgId = db.Column(db.BigInteger, nullable=True)
+
+
 def query_table():
     with flask_app.app_context():
         collections = CollectionConfigs.query.all()
@@ -154,7 +162,7 @@ def query_chats_by_contract(network, contract):
         return entry.chats
 
 
-async def check_if_exists(network, contract):
+def check_if_exists(network, contract):
 
     with flask_app.app_context():
 
@@ -168,16 +176,16 @@ async def check_if_exists(network, contract):
         return entry.id
 
 
-async def initial_config():
+def initial_config():
     print("initializing app with database...")
     db.init_app(flask_app)
-    # with flask_app.app_context():
-    #     db.drop_all()
-    #     db.create_all()
-    #     db.session.commit()
+    with flask_app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.commit()
 
 
-async def add_config(name, slug, network, contract, website, webhookId, chats):
+def add_config(name, slug, network, contract, website, webhookId, chats):
 
     with flask_app.app_context():
         config = CollectionConfigs(
@@ -193,7 +201,7 @@ async def add_config(name, slug, network, contract, website, webhookId, chats):
         db.session.commit()
 
 
-async def update_config(name, slug, network, contract, website, webhookId, chats):
+def update_config(name, slug, network, contract, website, webhookId, chats):
 
     with flask_app.app_context():
 
@@ -210,7 +218,7 @@ async def update_config(name, slug, network, contract, website, webhookId, chats
         db.session.commit()
 
 
-async def update_chats_by_id(id, chats):
+def update_chats_by_id(id, chats):
     with flask_app.app_context():
         collection_update = CollectionConfigs.query.filter(
             CollectionConfigs.id == id
@@ -219,7 +227,7 @@ async def update_chats_by_id(id, chats):
         db.session.commit()
 
 
-async def delete_config_by_id(id):
+def delete_config_by_id(id):
 
     with flask_app.app_context():
         collection = CollectionConfigs.query.filter(CollectionConfigs.id == id).one()

@@ -119,7 +119,12 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
 # create bot
 context_types = ContextTypes(context=CustomContext, chat_data=ChatData)
 application = (
-    ApplicationBuilder().token(TOKEN).updater(None).context_types(context_types).build()
+    ApplicationBuilder()
+    .token(TOKEN)
+    .updater(None)
+    .context_types(context_types)
+    .concurrent_updates(True)
+    .build()
 )
 
 
@@ -249,7 +254,7 @@ async def parse_tx(json_data):
                 )
 
 
-async def bot_removed(update: Update, context: CallbackContext) -> None:
+def bot_removed(update: Update, context: CallbackContext) -> None:
     # Extract the new and old status of the bot
     old_status = update.my_chat_member.old_chat_member.status
     new_status = update.my_chat_member.new_chat_member.status
@@ -270,13 +275,13 @@ async def bot_removed(update: Update, context: CallbackContext) -> None:
                 # delete webhook
                 # delete db entry
                 delete_webhook(collection["webhookId"])
-                await delete_config_by_id(collection["id"])
+                delete_config_by_id(collection["id"])
             else:
                 for chat in collection["chats"]:
                     if chat != update.effective_chat.id:
                         new_chats.append(chat)
 
-                await update_chats_by_id(collection["id"], new_chats)
+                update_chats_by_id(collection["id"], new_chats)
 
 
 async def start(update: Update, context: CustomContext):
@@ -470,16 +475,16 @@ async def enter_website(update: Update, context: CustomContext):
             network=context.network, contract=context.contract
         )
 
-    entry = await check_if_exists(context.network, context.contract)
+    entry = check_if_exists(context.network, context.contract)
 
     if entry is None:
         # TODO:
         # check if contract exists
 
         webhookId = create_webhook(network=context.network, contract=context.contract)
-        [name, slug] = await getCollectionInfo(context.network, context.contract)
+        [name, slug] = getCollectionInfo(context.network, context.contract)
 
-        await add_config(
+        add_config(
             name,
             slug,
             context.network,
@@ -496,12 +501,12 @@ async def enter_website(update: Update, context: CustomContext):
     else:
         webhookId = create_webhook(network=context.network, contract=context.contract)
 
-        [name, slug] = await getCollectionInfo(context.network, context.contract)
+        [name, slug] = getCollectionInfo(context.network, context.contract)
         chats: list[str] = query_chats_by_contract(context.network, context.contract)
         if context.chat not in chats:
             chats.append(context.chat)
 
-        await update_config(
+        update_config(
             name,
             slug,
             context.network,
@@ -543,7 +548,7 @@ async def webhook_update(
     collection = query_collection_by_webhook(update.webhookId)
     network = collection["network"]
 
-    [img, text] = await getMetadata(
+    [img, text] = getMetadata(
         network,
         update.contract,
         update.toAddress,

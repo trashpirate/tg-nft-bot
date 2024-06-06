@@ -173,7 +173,17 @@ def create_test_webhook(network, contract):
     # "end_range": 20025606,
     # mint
     # "start_range": 19628336,
-    #     "end_range": 19628338,
+    # "end_range": 19628338,
+
+    # liquid mint
+    # "start_range": 14724597,
+    # "end_range": 14724599,
+
+    # flameling purchase
+    # 19458239
+
+    # queens mint
+    # 15448852
 
     filter = getQuickNodeFilter(contract)
     url = "https://api.quicknode.com/streams/rest/v1/streams"
@@ -184,8 +194,8 @@ def create_test_webhook(network, contract):
         "dataset": "receipts",
         "filter_function": filter,
         "region": "usa_east",
-        "start_range": 14724597,
-        "end_range": 14724599,
+        "start_range": 15448851,
+        "end_range": 15448853,
         "dataset_batch_size": 1,
         "include_stream_metadata": "body",
         "destination": "webhook",
