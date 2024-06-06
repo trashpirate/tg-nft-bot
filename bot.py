@@ -185,6 +185,10 @@ def network_menu():
 # dataclasses
 @dataclass
 class WebhookUpdate:
+    data: str
+
+
+class WebhookData:
     webhookId: str
     contract: str
     tokenId: object
@@ -196,12 +200,17 @@ class WebhookUpdate:
 
 
 # functions
-async def parse_tx(json_data):
+def parse_tx(json_data):
+
+    receipts = json_data["data"][0]["content"]["receipts"]
+
+    if len(receipts) < 1:
+        print("No new data.")
+        return None
 
     # webhook id
     webhookId = json_data["metadata"]["stream_id"]
     network = json_data["metadata"]["network"]
-    receipts = json_data["data"][0]["content"]["receipts"]
 
     for receipt in receipts:
         for log in receipt["logs"]:
@@ -230,27 +239,24 @@ async def parse_tx(json_data):
                 if fromAddress == "0x0000000000000000000000000000000000000000":
                     txType = "mint"
                 else:
-                    # TODO:
-                    # use value from transaction to check if sold - exclude pure transfers
+
                     w3 = Web3(HTTPProvider(RPC[network]))
                     tx = w3.eth.get_transaction(hash)
                     value = Web3.from_wei(tx["value"], "ether")
                     if value > 0:
                         txType = "purchase"
                     else:
-                        return
+                        return None
 
-                await application.update_queue.put(
-                    WebhookUpdate(
-                        webhookId=webhookId,
-                        tokenId=tokenId,
-                        contract=contract,
-                        fromAddress=fromAddress,
-                        toAddress=toAddress,
-                        hash=hash,
-                        type=txType,
-                        value=value,
-                    )
+                return dict(
+                    webhookId=webhookId,
+                    tokenId=tokenId,
+                    contract=contract,
+                    fromAddress=fromAddress,
+                    toAddress=toAddress,
+                    hash=hash,
+                    type=txType,
+                    value=value,
                 )
 
 
@@ -545,17 +551,21 @@ async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
 
-    collection = query_collection_by_webhook(update.webhookId)
+    data = parse_tx(update.data)
+    if data is None:
+        return
+
+    collection = query_collection_by_webhook(data["webhookId"])
     network = collection["network"]
 
     [img, text] = getMetadata(
         network,
-        update.contract,
-        update.toAddress,
-        update.tokenId,
-        update.hash,
-        update.type,
-        update.value,
+        data["contract"],
+        data["toAddress"],
+        data["tokenId"],
+        data["hash"],
+        data["type"],
+        data["value"],
     )
 
     chats: list[str] = collection["chats"]
@@ -575,6 +585,10 @@ async def update_queue(new_data):
     )
 
 
+async def update_webhook_queue(new_data):
+    await application.update_queue.put(WebhookUpdate(data=new_data))
+
+
 async def start_app():
 
     # conversation handlers
@@ -590,15 +604,10 @@ async def start_app():
     )
 
     # define handlers
-
-    # start_handler = CommandHandler("start", start)
-    # webhook_handler = CommandHandler("webhook", webhook)
-
-    # add commands
-    # application.add_handler(start_handler)
-    # application.add_handler(webhook_handler)
     application.add_handler(conv_handler)
-    application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
+    application.add_handler(
+        TypeHandler(type=WebhookUpdate, callback=webhook_update, block=False)
+    )
     application.add_handler(
         ChatMemberHandler(bot_removed, ChatMemberHandler.MY_CHAT_MEMBER)
     )

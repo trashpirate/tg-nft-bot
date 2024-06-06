@@ -4,7 +4,7 @@ from flask import Response, request
 import uvicorn
 from asgiref.wsgi import WsgiToAsgi
 
-from bot import parse_tx, start_app, update_queue
+from bot import WebhookUpdate, parse_tx, start_app, update_queue, update_webhook_queue
 from models import initial_config
 from credentials import PORT, TEST
 
@@ -24,16 +24,21 @@ async def main() -> None:
 
     @flask_app.route("/nfts", methods=["GET", "POST"])
     async def nft_udpates() -> Response:
-        # Handle incoming NFT updates by putting them into the `update_queue`
+
         json_data = request.json
-        # try:
-        json_data = request.json
-        # print(json_data["data"][0]["content"]["receipts"])
-        if len(json_data["data"][0]["content"]["receipts"]) < 1:
-            print("No new data.")
-        else:
-            await parse_tx(json_data)
+        await update_webhook_queue(json_data)
         return Response(status=HTTPStatus.OK)
+
+        # # Handle incoming NFT updates by putting them into the `update_queue`
+        # json_data = request.json
+        # # try:
+        # json_data = request.json
+        # # print(json_data["data"][0]["content"]["receipts"])
+        # if len(json_data["data"][0]["content"]["receipts"]) < 1:
+        #     print("No new data.")
+        # else:
+        #     await parse_tx(json_data)
+        # return Response(status=HTTPStatus.OK)
 
         # except:
         #     print("Invalid request.")
