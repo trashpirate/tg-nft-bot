@@ -4,8 +4,9 @@ from flask import Response, request
 import uvicorn
 from asgiref.wsgi import WsgiToAsgi
 
-from bot import WebhookUpdate, parse_tx, start_app, update_queue, update_webhook_queue
-from models import initial_config
+from bot import start_app, update_queue, update_webhook_queue, create_webhook_route
+
+from models import initial_config, query_table
 from credentials import PORT, TEST
 
 from app import flask_app
@@ -15,34 +16,19 @@ async def main() -> None:
 
     initial_config()
 
+    # get all the configured chats and create the webhook routes on restart
+    collection_list = query_table()
+
+    if len(collection_list) > 0:
+        for collection in collection_list:
+            create_webhook_route("/" + collection["slug"])
+
     @flask_app.post("/telegram")
     async def telegram() -> Response:
         # Handle incoming Telegram updates by putting them into the `update_queue`
         json_data = request.json
         await update_queue(json_data)
         return Response(status=HTTPStatus.OK)
-
-    @flask_app.route("/nfts", methods=["GET", "POST"])
-    async def nft_udpates() -> Response:
-
-        json_data = request.json
-        await update_webhook_queue(json_data)
-        return Response(status=HTTPStatus.OK)
-
-        # # Handle incoming NFT updates by putting them into the `update_queue`
-        # json_data = request.json
-        # # try:
-        # json_data = request.json
-        # # print(json_data["data"][0]["content"]["receipts"])
-        # if len(json_data["data"][0]["content"]["receipts"]) < 1:
-        #     print("No new data.")
-        # else:
-        #     await parse_tx(json_data)
-        # return Response(status=HTTPStatus.OK)
-
-        # except:
-        #     print("Invalid request.")
-        #     return Response(status=HTTPStatus.OK)
 
     webserver = uvicorn.Server(
         config=uvicorn.Config(

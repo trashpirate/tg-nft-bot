@@ -94,7 +94,7 @@ def activate_webhook(id):
     print(response.text)
 
 
-def create_webhook(network, contract):
+def create_webhook(network, contract, route):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
@@ -141,7 +141,7 @@ def create_webhook(network, contract):
             "fix_block_reorgs": 0,
             "keep_distance_from_tip": 0,
             "destination_attributes": {
-                "url": f"{URL}/nfts",
+                "url": f"{URL}/{route}",
                 "compression": "none",
                 "headers": {
                     "Content-Type": "application/json",
@@ -161,7 +161,7 @@ def create_webhook(network, contract):
         return stream_id
 
 
-def create_test_webhook(network, contract):
+def create_test_webhook(network, contract, route):
     # network = "ethereum-mainnet"
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
 
@@ -202,7 +202,7 @@ def create_test_webhook(network, contract):
         "fix_block_reorgs": 0,
         "keep_distance_from_tip": 0,
         "destination_attributes": {
-            "url": f"{URL}/nfts",
+            "url": f"{URL}/{route}",
             "compression": "none",
             "headers": {
                 "Content-Type": "application/json",
