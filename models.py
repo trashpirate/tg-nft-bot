@@ -171,10 +171,10 @@ async def check_if_exists(network, contract):
 async def initial_config():
     print("initializing app with database...")
     db.init_app(flask_app)
-    with flask_app.app_context():
-        db.drop_all()
-        db.create_all()
-        db.session.commit()
+    # with flask_app.app_context():
+    #     db.drop_all()
+    #     db.create_all()
+    #     db.session.commit()
 
 
 async def add_config(name, slug, network, contract, website, webhookId, chats):
