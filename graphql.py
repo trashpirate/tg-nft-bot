@@ -111,7 +111,8 @@ def get_quicknode_streams():
 
 def delete_webhook(id):
     url = "https://api.quicknode.com/streams/rest/v1/streams/" + id
-    response = post_quicknode({}, url)
+    headers = {"accept": "application/json", "x-api-key": QUICKNODE_API_KEY}
+    response = requests.request("DELETE", url, headers=headers, data={})
     print(response.text)
 
 

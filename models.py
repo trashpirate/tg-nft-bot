@@ -171,10 +171,10 @@ async def check_if_exists(network, contract):
 async def initial_config():
     print("initializing app with database...")
     db.init_app(flask_app)
-    with flask_app.app_context():
-        db.drop_all()
-        db.create_all()
-        db.session.commit()
+    # with flask_app.app_context():
+    #     db.drop_all()
+    #     db.create_all()
+    #     db.session.commit()
 
 
 async def add_config(name, slug, network, contract, website, webhookId, chats):
@@ -216,4 +216,12 @@ async def update_chats_by_id(id, chats):
             CollectionConfigs.id == id
         ).one()
         collection_update.chats = chats
+        db.session.commit()
+
+
+async def delete_config_by_id(id):
+
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter(CollectionConfigs.id == id).one()
+        db.session.delete(collection)
         db.session.commit()

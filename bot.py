@@ -30,6 +30,7 @@ from web3 import HTTPProvider, Web3
 from models import (
     add_config,
     check_if_exists,
+    delete_config_by_id,
     query_chats_by_contract,
     query_collection,
     query_collection_by_chat,
@@ -39,7 +40,7 @@ from models import (
     update_config,
 )
 from credentials import ADMIN_ID, TABLE, TOKEN, URL
-from graphql import RPC, create_test_webhook, create_webhook
+from graphql import RPC, create_test_webhook, create_webhook, delete_webhook
 from nfts import getCollectionInfo, getMetadata
 from models import query_network_by_webhook
 
@@ -258,26 +259,26 @@ async def bot_removed(update: Update, context: CallbackContext) -> None:
     if old_status in [ChatMember.ADMINISTRATOR, ChatMember.MEMBER] and (
         new_status == ChatMember.BANNED or new_status == ChatMember.LEFT
     ):
-        # get chats from database
-        # remove chat from database
+        # TODO:
         # delete webhook if no chat left
         collections = query_collection_by_chat(update.effective_chat.id)
-        print(collections)
+
         for collection in collections:
             new_chats = []
-            for chat in collection["chats"]:
-                if chat != update.effective_chat.id:
-                    new_chats.append(chat)
+            if (
+                len(collection["chats"]) == 1
+                and collection["chats"][0] == update.effective_chat.id
+            ):
+                # delete webhook
+                # delete db entry
+                delete_webhook(collection["webhookId"])
+                await delete_config_by_id(collection["id"])
+            else:
+                for chat in collection["chats"]:
+                    if chat != update.effective_chat.id:
+                        new_chats.append(chat)
 
-            await update_chats_by_id(collection["id"], new_chats)
-
-        chat_title = update.effective_chat.title
-        print(chat_title)
-        # Perform your logic here
-        # await context.bot.send_message(
-        #     chat_id=update.effective_chat.id,
-        #     text=f"I have been removed from the group: {chat_title}",
-        # )
+                await update_chats_by_id(collection["id"], new_chats)
 
 
 async def start(update: Update, context: CustomContext):
