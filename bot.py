@@ -209,25 +209,15 @@ def parse_tx(json_data):
                     tokenId = int(topics[3], 16)
                     # transaction hash
                     hash = log["transactionHash"]
-                    # eth value
-                    value = 0
 
                     # check if mint or purchase
-                    txType = "mint"
                     if fromAddress != "0x0000000000000000000000000000000000000000":
-                        w3 = Web3(HTTPProvider(RPC[network]))
-                        tx = w3.eth.get_transaction(hash)
-                        value = Web3.from_wei(tx["value"], "ether")
-                        if value > 0:
-                            txType = "purchase"
-                        else:
-                            timestamp = w3.eth.get_block(tx["blockNumber"])["timestamp"]
-                            value = getSaleInfo(network, contract, tokenId, timestamp)
-                            if value > 0:
-                                txType = "purchase"
-                            else:
-                                return None
 
+                        info = getSaleInfo(network, contract, tokenId)
+                        if info is None:
+                            return None
+                    else:
+                        info = {"type": "mint"}
                     return dict(
                         webhookId=webhookId,
                         tokenId=tokenId,
@@ -235,8 +225,7 @@ def parse_tx(json_data):
                         fromAddress=fromAddress,
                         toAddress=toAddress,
                         hash=hash,
-                        type=txType,
-                        value=value,
+                        info=info,
                     )
     except Exception:
         traceback.print_exc()
@@ -363,8 +352,7 @@ async def webhook_update(
         data["toAddress"],
         data["tokenId"],
         data["hash"],
-        data["type"],
-        data["value"],
+        data["info"],
     )
 
     chats: list[str] = collection["chats"]

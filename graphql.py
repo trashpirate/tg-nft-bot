@@ -91,7 +91,7 @@ def create_webhook(network, contract, route):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
-    stream_url = f"{URL}/{route}"
+    stream_url = f"{URL}{route}"
 
     if TEST == "true":
         stream_name += "-test"
@@ -163,39 +163,31 @@ def create_webhook(network, contract, route):
 def create_test_webhook(network, contract, route):
     # network = "ethereum-mainnet"
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
-
+    # ETHEREUM:0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775:188
     blocks = {
-        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 19628337,
+        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 20041787,
         "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19889298,
-        "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15448852,
+        "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15497265,
         "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2": 14724598,
     }
 
-    # transfer
-    # "start_range": 19976946,
-    # "end_range": 19976948,
-    # purchase
-    # "start_range": 20025604,
-    # "end_range": 20025606,
-    # mint
-    # "start_range": 19628336,
-    # "end_range": 19628338,
+    stream_name = network + "-" + Web3.to_checksum_address(contract)
+    stream_url = f"{URL}{route}"
 
-    # liquid mint
-    # "start_range": 14724597,
-    # "end_range": 14724599,
+    if TEST == "true":
+        stream_name += "-test"
+    streams = get_quicknode_streams()
+    if streams is not None:
+        for stream in streams:
 
-    # flameling purchase
-    # 19458239
+            if (
+                stream["name"] == stream_name
+                and stream["destination_attributes"]["url"] == stream_url
+            ):
+                stream_id = stream["id"]
+                delete_webhook(stream_id)
+                print(f"Webhook updated: id = {stream_id}")
 
-    # flameling mint
-    # 19889298
-
-    # queens mint
-    # 15448852
-
-    # queens sell
-    # 15468293
     start_block = blocks[contract] - 1
     end_block = blocks[contract] + 1
 
@@ -219,7 +211,7 @@ def create_test_webhook(network, contract, route):
         "fix_block_reorgs": 0,
         "keep_distance_from_tip": 0,
         "destination_attributes": {
-            "url": f"{URL}/{route}",
+            "url": f"{URL}{route}",
             "compression": "none",
             "headers": {
                 "Content-Type": "application/json",
