@@ -44,12 +44,12 @@ from models import (
     update_config,
 )
 from credentials import TEST, TOKEN, URL
-from graphql import RPC, create_test_webhook, create_webhook, delete_webhook
-from nfts import getCollectionInfo, getMetadata
+from graphql import create_test_webhook, create_webhook, delete_webhook
+from nfts import getCollectionInfo, getMetadata, getSaleInfo
 from app import flask_app
 
 # helpers
-from helpers import NETWORK_SYMBOLS
+from helpers import NETWORK_SYMBOLS, RPC
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -70,7 +70,7 @@ class ChatData:
         self.network: str = None
         self.contract: str = None
         self.website: str = None
-        self.chat: str = None
+        self.chat: int = None
         self.menu: int = None
 
 
@@ -102,7 +102,7 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
         return self.chat_data.website
 
     @property
-    def chat(self) -> Optional[str]:
+    def chat(self) -> Optional[int]:
         return self.chat_data.chat
 
     @property
@@ -126,7 +126,7 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
         self.chat_data.website = value
 
     @chat.setter
-    def chat(self, value: str) -> None:
+    def chat(self, value: int) -> None:
         self.chat_data.chat = value
 
     @menu.setter
@@ -195,7 +195,7 @@ def parse_tx(json_data):
                 and topics[0]
                 == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
             ):
-
+                print(log)
                 # contract address
                 contract = Web3.to_checksum_address(log["address"])
                 # from address
@@ -210,17 +210,20 @@ def parse_tx(json_data):
                 value = 0
 
                 # check if mint or purchase
-                if fromAddress == "0x0000000000000000000000000000000000000000":
-                    txType = "mint"
-                else:
-
+                txType = "mint"
+                if fromAddress != "0x0000000000000000000000000000000000000000":
                     w3 = Web3(HTTPProvider(RPC[network]))
                     tx = w3.eth.get_transaction(hash)
                     value = Web3.from_wei(tx["value"], "ether")
                     if value > 0:
                         txType = "purchase"
                     else:
-                        return None
+                        timestamp = w3.eth.get_block(tx["blockNumber"])["timestamp"]
+                        value = getSaleInfo(network, contract, tokenId, timestamp)
+                        if value > 0:
+                            txType = "purchase"
+                        else:
+                            return None
 
                 return dict(
                     webhookId=webhookId,
@@ -412,6 +415,10 @@ async def enter_website(update: Update, context: CustomContext):
 
     else:
         website = update.message.text
+
+        user_message = update.message
+        await user_message.delete()
+
         if website == context.contract:
             return WEBSITE
 
@@ -443,13 +450,15 @@ async def enter_website(update: Update, context: CustomContext):
                     webhookId,
                     [context.chat],
                 )
-
+                status = "_Collection is added._"
             else:
 
                 chats: list[str] = query_chats_by_contract(
                     context.network, context.contract
                 )
-                if context.chat not in chats:
+
+                exist_count = chats.count(context.chat)
+                if exist_count == 0:
                     chats.append(context.chat)
 
                 update_config(
@@ -462,7 +471,7 @@ async def enter_website(update: Update, context: CustomContext):
                     chats,
                 )
 
-            status = "_Collection is configured._"
+                status = "_Collection is updated._"
         except:
             status = "_Configuration failed. Please start over and try again._"
 
@@ -680,7 +689,7 @@ async def select_action(update: Update, context: CustomContext):
 
 
 async def start(update: Update, context: CustomContext):
-
+    
     if (
         update.effective_chat.type == "group"
         or update.effective_chat.type == "supergroup"
@@ -710,7 +719,7 @@ async def start(update: Update, context: CustomContext):
 
     elif update.effective_chat.type == "private":
         if context.args:
-            context.chat = context.args[0]
+            context.chat = int(context.args[0])
             [reply_markup, message_text] = main_menu()
             message = await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -766,9 +775,7 @@ async def start_app():
 
     # define handlers
     application.add_handler(conv_handler)
-    application.add_handler(
-        TypeHandler(type=WebhookUpdate, callback=webhook_update, block=False)
-    )
+    application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
     application.add_handler(
         ChatMemberHandler(bot_removed, ChatMemberHandler.MY_CHAT_MEMBER)
     )
