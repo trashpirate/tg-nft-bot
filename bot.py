@@ -38,6 +38,7 @@ from models import (
     delete_config_by_id,
     query_chats_by_contract,
     query_collection_by_chat,
+    query_collection_by_id,
     query_collection_by_webhook,
     query_table,
     update_chats_by_id,
@@ -176,65 +177,69 @@ def create_webhook_route(route):
 # functions
 def parse_tx(json_data):
 
-    receipts = json_data["data"][0]["content"]["receipts"]
+    receipts = json_data["data"][0]["receipts"]
 
     if len(receipts) < 1:
-        print("No new data.")
+        # print("No new data.")
         return None
 
     # webhook id
-    webhookId = json_data["metadata"]["stream_id"]
-    network = json_data["metadata"]["network"]
+    try:
+        webhookId = json_data["metadata"]["stream_id"]
+        network = json_data["metadata"]["network"]
 
-    for receipt in receipts:
-        for log in receipt["logs"]:
+        for receipt in receipts:
+            for log in receipt["logs"]:
 
-            topics = log["topics"]
-            if (
-                len(topics) == 4
-                and topics[0]
-                == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-            ):
-                print(log)
-                # contract address
-                contract = Web3.to_checksum_address(log["address"])
-                # from address
-                fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
-                # owner address
-                toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
-                # tokenId
-                tokenId = int(topics[3], 16)
-                # transaction hash
-                hash = log["transactionHash"]
-                # eth value
-                value = 0
+                topics = log["topics"]
+                if (
+                    len(topics) == 4
+                    and topics[0]
+                    == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                ):
+                    print(log)
+                    # contract address
+                    contract = Web3.to_checksum_address(log["address"])
+                    # from address
+                    fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
+                    # owner address
+                    toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
+                    # tokenId
+                    tokenId = int(topics[3], 16)
+                    # transaction hash
+                    hash = log["transactionHash"]
+                    # eth value
+                    value = 0
 
-                # check if mint or purchase
-                txType = "mint"
-                if fromAddress != "0x0000000000000000000000000000000000000000":
-                    w3 = Web3(HTTPProvider(RPC[network]))
-                    tx = w3.eth.get_transaction(hash)
-                    value = Web3.from_wei(tx["value"], "ether")
-                    if value > 0:
-                        txType = "purchase"
-                    else:
-                        timestamp = w3.eth.get_block(tx["blockNumber"])["timestamp"]
-                        value = getSaleInfo(network, contract, tokenId, timestamp)
+                    # check if mint or purchase
+                    txType = "mint"
+                    if fromAddress != "0x0000000000000000000000000000000000000000":
+                        w3 = Web3(HTTPProvider(RPC[network]))
+                        tx = w3.eth.get_transaction(hash)
+                        value = Web3.from_wei(tx["value"], "ether")
                         if value > 0:
                             txType = "purchase"
                         else:
-                            return None
+                            timestamp = w3.eth.get_block(tx["blockNumber"])["timestamp"]
+                            value = getSaleInfo(network, contract, tokenId, timestamp)
+                            if value > 0:
+                                txType = "purchase"
+                            else:
+                                return None
 
-                return dict(
-                    webhookId=webhookId,
-                    tokenId=tokenId,
-                    contract=contract,
-                    fromAddress=fromAddress,
-                    toAddress=toAddress,
-                    hash=hash,
-                    type=txType,
-                    value=value,
-                )
+                    return dict(
+                        webhookId=webhookId,
+                        tokenId=tokenId,
+                        contract=contract,
+                        fromAddress=fromAddress,
+                        toAddress=toAddress,
+                        hash=hash,
+                        type=txType,
+                        value=value,
+                    )
+    except Exception as e:
+        print(e)
+        return None
 
 
 #################################################################
@@ -258,7 +263,7 @@ title_message = "*CONFIG MENU*\n\n"
 
 
 # states
-MAIN, NETWORK, CONTRACT, WEBSITE = range(4)
+MAIN, NETWORK, CONTRACT, WEBSITE, ADD_CONFIG = range(5)
 chat_ids = []
 network_selected = ""
 contract_address = ""
@@ -424,6 +429,10 @@ async def enter_website(update: Update, context: CustomContext):
 
         try:
             [name, slug] = getCollectionInfo(context.network, context.contract)
+
+            if website[:8] != "https://":
+                website = "https://opensea.io/collection/" + slug
+
             route = "/" + slug
             create_webhook_route(route)
 
@@ -628,17 +637,31 @@ async def select_action(update: Update, context: CustomContext):
         return MAIN
 
     if query.data == "view":
-        rows: list[dict] = query_table()
 
-        if len(rows) > 0:
+        try:
             message_text = "<b>BOT CONFIGURATIONS:</b>\n\n"
             index = 1
+            row_buttons = []
+            config_buttons = []
+            rows: list[dict] = query_table()
             for r in rows:
+                cid = r["id"]
                 name = r["name"]
                 network = r["network"]
                 contract = r["contract"]
                 website = r["website"]
                 chats = r["chats"]
+
+                chats_isAdmin = []
+                for chat in chats:
+                    admins = await application.bot.get_chat_administrators(chat)
+                    admin_ids = [admin["user"]["id"] for admin in admins]
+                    if update.effective_user.id in admin_ids:
+                        chats_isAdmin.append(chat)
+
+                # throw exception if user is not admin in any of the configured groups
+                if len(chats_isAdmin) == 0:
+                    raise Exception("User is not admin of any configurations.")
 
                 if len(r["website"]) > 8:
                     website = r["website"]
@@ -647,7 +670,7 @@ async def select_action(update: Update, context: CustomContext):
 
                 message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
-                for chat in chats:
+                for chat in chats_isAdmin:
                     group_chat = await context.bot.get_chat(chat)
                     if group_chat.title is None:
                         chat_name = group_chat.username
@@ -656,9 +679,28 @@ async def select_action(update: Update, context: CustomContext):
                     message_text += chat_name + ", "
 
                 message_text = message_text[:-2] + "\n\n"
+
+                row_buttons.append(
+                    InlineKeyboardButton(
+                        "CONFIG " + str(index), callback_data="cid-" + str(cid)
+                    )
+                )
+                if index % 3 == 0:
+                    config_buttons.append(row_buttons)
+                    row_buttons = []
+
                 index += 1
 
-            reply_markup = return_menu()
+            if len(row_buttons) != 0 and len(row_buttons) < 3:
+                config_buttons.append(row_buttons)
+            config_buttons.append(
+                [
+                    InlineKeyboardButton("RETURN", callback_data="return"),
+                    InlineKeyboardButton("CANCEL", callback_data="cancel"),
+                ]
+            )
+
+            reply_markup = InlineKeyboardMarkup(config_buttons)
 
             await query.edit_message_text(
                 text=message_text,
@@ -666,7 +708,10 @@ async def select_action(update: Update, context: CustomContext):
                 parse_mode=ParseMode.HTML,
             )
 
-        else:
+            return ADD_CONFIG
+
+        except Exception as e:
+            print(e)
             reply_markup = return_menu()
             await query.edit_message_text(
                 text="No configurations found.",
@@ -674,7 +719,7 @@ async def select_action(update: Update, context: CustomContext):
                 parse_mode=ParseMode.MARKDOWN,
             )
 
-        return MAIN
+            return MAIN
 
     if query.data == "new":
         [reply_markup, message_text] = network_menu()
@@ -688,8 +733,142 @@ async def select_action(update: Update, context: CustomContext):
     return NETWORK
 
 
+async def add_collection(update: Update, context: CustomContext):
+
+    query = update.callback_query
+    await query.answer()
+
+    await query.answer()
+    if query.data == "cancel":
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=cancel_message,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return ConversationHandler.END
+
+    if query.data == "return":
+        [reply_markup, message_text] = main_menu()
+
+        await query.edit_message_text(
+            text=message_text,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
+        return MAIN
+
+    if query.data[:3] == "cid":
+        collection = query_collection_by_id(int(query.data[4:]))
+        chats: list[int] = collection["chats"]
+
+        exist_count = chats.count(context.chat)
+        if exist_count == 0:
+            chats.append(context.chat)
+
+            update_config(
+                collection["name"],
+                collection["slug"],
+                collection["network"],
+                collection["contract"],
+                collection["website"],
+                collection["webhookId"],
+                chats,
+            )
+
+            name = collection["name"]
+            status = f"<i>{name} collection added.</i>"
+        else:
+            name = collection["name"]
+            status = f"<i>{name} collection aready added.</i>"
+
+    try:
+        message_text = "<b>BOT CONFIGURATIONS:</b>\n\n"
+        index = 1
+        row_buttons = []
+        config_buttons = []
+        rows: list[dict] = query_table()
+        for r in rows:
+            cid = r["id"]
+            name = r["name"]
+            network = r["network"]
+            contract = r["contract"]
+            website = r["website"]
+            chats = r["chats"]
+
+            chats_isAdmin = []
+            for chat in chats:
+                admins = await application.bot.get_chat_administrators(chat)
+                admin_ids = [admin["user"]["id"] for admin in admins]
+                if update.effective_user.id in admin_ids:
+                    chats_isAdmin.append(chat)
+
+            # throw exception if user is not admin in any of the configured groups
+            if len(chats_isAdmin) == 0:
+                raise Exception("User is not admin of any configurations.")
+
+            if len(r["website"]) > 8:
+                website = r["website"]
+            else:
+                website = "https://opensea.io/collection/" + r["slug"]
+
+            message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
+
+            for chat in chats_isAdmin:
+                group_chat = await context.bot.get_chat(chat)
+                if group_chat.title is None:
+                    chat_name = group_chat.username
+                else:
+                    chat_name = group_chat.title
+                message_text += chat_name + ", "
+
+            message_text = message_text[:-2] + "\n\n"
+            message_text += status
+
+            row_buttons.append(
+                InlineKeyboardButton(
+                    "CONFIG " + str(index), callback_data="cid-" + str(cid)
+                )
+            )
+            if index % 3 == 0:
+                config_buttons.append(row_buttons)
+                row_buttons = []
+
+            index += 1
+
+        if len(row_buttons) != 0 and len(row_buttons) < 3:
+            config_buttons.append(row_buttons)
+        config_buttons.append(
+            [
+                InlineKeyboardButton("RETURN", callback_data="return"),
+                InlineKeyboardButton("CANCEL", callback_data="cancel"),
+            ]
+        )
+
+        reply_markup = InlineKeyboardMarkup(config_buttons)
+
+        await query.edit_message_text(
+            text=message_text,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML,
+        )
+
+        return ADD_CONFIG
+
+    except Exception as e:
+        print(e)
+        reply_markup = return_menu()
+        await query.edit_message_text(
+            text="No configurations found.",
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
+        return MAIN
+
+
 async def start(update: Update, context: CustomContext):
-    
+
     if (
         update.effective_chat.type == "group"
         or update.effective_chat.type == "supergroup"
@@ -769,6 +948,7 @@ async def start_app():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, enter_website),
                 CallbackQueryHandler(enter_website),
             ],
+            ADD_CONFIG: [CallbackQueryHandler(add_collection)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

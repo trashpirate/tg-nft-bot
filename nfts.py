@@ -133,11 +133,7 @@ def getMetadata(network, contract, owner, tokenId, hash, txType, value):
 
     collection_name = collection["name"]
     slug = collection["slug"]
-
-    if len(collection["website"]) > 8:
-        website = collection["website"]
-    else:
-        website = "https://opensea.io/collection/" + slug
+    website = collection["website"]
 
     total_supply = getTotalSupply(slug)
 
@@ -191,6 +187,8 @@ def getMetadata(network, contract, owner, tokenId, hash, txType, value):
     message += '<a href="' + magicEden + '">MagicEden</a>\n'
 
     message += "\n\nAD: "
-    message += '<a href="https://t.me/EARNCRYPTOALPHA">Subscribe to EARNCryptoAlpha Channel!</a>\n'
+    message += (
+        '<a href="https://t.me/EARNServices">Book a slot to show your ad here!</a>\n'
+    )
     message += "\n<i>Powered by @EARNServices</i>"
     return [nft_image, message]

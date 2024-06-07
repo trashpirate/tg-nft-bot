@@ -91,12 +91,18 @@ def create_webhook(network, contract, route):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
+    stream_url = f"{URL}/{route}"
+
     if TEST == "true":
         stream_name += "-test"
     streams = get_quicknode_streams()
     if streams is not None:
         for stream in streams:
-            if stream["name"] == stream_name:
+
+            if (
+                stream["name"] == stream_name
+                and stream["destination_attributes"]["url"] == stream_url
+            ):
                 stream_id = stream["id"]
                 print(f"Webhook already exists for this collection: id = {stream_id}")
                 break
@@ -134,7 +140,7 @@ def create_webhook(network, contract, route):
             "fix_block_reorgs": 0,
             "keep_distance_from_tip": 0,
             "destination_attributes": {
-                "url": f"{URL}/{route}",
+                "url": stream_url,
                 "compression": "none",
                 "headers": {
                     "Content-Type": "application/json",
@@ -175,6 +181,9 @@ def create_test_webhook(network, contract, route):
     # flameling purchase
     # 19458239
 
+    # flameling mint
+    # 19889298
+
     # queens mint
     # 15448852
 
@@ -190,8 +199,8 @@ def create_test_webhook(network, contract, route):
         "dataset": "receipts",
         "filter_function": filter,
         "region": "usa_east",
-        "start_range": 15468292,
-        "end_range": 15468294,
+        "start_range": 19889297,
+        "end_range": 19889299,
         "dataset_batch_size": 1,
         "include_stream_metadata": "body",
         "destination": "webhook",
