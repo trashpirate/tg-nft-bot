@@ -1,6 +1,7 @@
 from web3 import HTTPProvider, Web3
 from credentials import (
     OPENSEA_API_KEY,
+    RESERVOIR_API_KEY,
 )
 import requests
 import json
@@ -64,40 +65,50 @@ CURRENCY = {
     "polygon-mainnet": "MATIC",
 }
 
+RARIBLE_CHAINS = {
+    "ethereum-mainnet": "ETHEREUM",
+    "bnbchain-mainnet": "BNB",
+    "base-mainnet": "BASE",
+    "avalanche-mainnet": "AVAX",
+    "arbitrum-mainnet": "ARBITRUM",
+    "polygon-mainnet": "POLYGON",
+}
 
-def getSaleInfo(network, contract, tokenId, timestamp):
+RESERVOIR_URL = {
+    "ethereum-mainnet": "https://api.reservoir.tools/",
+    "bnbchain-mainnet": "https://api-bsc.reservoir.tools/",
+    "base-mainnet": "https://api-base.reservoir.tools/",
+    "avalanche-mainnet": "https://api-avalanche.reservoir.tools/",
+    "arbitrum-mainnet": "https://api-arbitrum.reservoir.tools/",
+    "polygon-mainnet": "https://api-polygon.reservoir.tools/",
+}
 
-    collection = query_collection(network, contract)
 
-    slug = collection["slug"]
+def getSaleInfo(network, contract, tokenId):
 
-    url = (
-        "https://api.opensea.io/api/v2/events/collection/"
-        + slug
-        + "?after="
-        + str(timestamp)
-        + "&event_type=sale"
-    )
-
-    headers = {
-        "accept": "application/json",
-        "x-api-key": OPENSEA_API_KEY,
-    }
+    url = f"{RESERVOIR_URL[network]}tokens/{contract}%3A{tokenId}/activity/v5?limit=1&sortBy=eventTimestamp&types=sale"
+    headers = {"accept": "*/*", "x-api-key": RESERVOIR_API_KEY}
 
     response = requests.get(url, headers=headers)
     data_json = response.json()
-    events = data_json["asset_events"]
 
+    events = data_json["activities"]
     if len(events) > 0:
-        for event in events:
-            tid = event["nft"]["identifier"]
-            if tid == str(tokenId):
-                price = int(event["payment"]["quantity"])
-                return Web3.from_wei(price, "ether")
-            else:
-                return 0
+        price_native = events[0]["price"]["amount"]["decimal"]
+        price_usd = events[0]["price"]["amount"]["usd"]
+        currency = events[0]["price"]["currency"]["symbol"]
+        marketplace = events[0]["fillSource"]["name"]
+
+        return {
+            "type": events[0]["type"],
+            "price": price_native,
+            "price_usd": price_usd,
+            "currency": currency,
+            "marketplace": marketplace,
+        }
+
     else:
-        return 0
+        return None
 
 
 def getCollectionInfo(network, contract):
@@ -126,7 +137,7 @@ def getTotalSupply(slug):
     return data_json["total_supply"]
 
 
-def getMetadata(network, contract, owner, tokenId, hash, txType, value):
+def getMetadata(network, contract, owner, tokenId, hash, info):
 
     tokenId = str(tokenId)
     collection = query_collection(network, contract)
@@ -156,13 +167,19 @@ def getMetadata(network, contract, owner, tokenId, hash, txType, value):
     magicEden = MAGIC_EDEN[network] + contract + "/" + tokenId
     scan = SCANS[network]
 
-    if txType == "mint":
+    if info["type"] == "mint":
         title = (f"NEW {collection_name} MINT! 🔥").upper()
         message = f"\n<b>{title}</b>\n\n"
-    else:
+    elif info["type"] == "sale":
         title = (f"NEW {collection_name} PURCHASE! 🔥").upper()
-        message = f"\n<b>{title}</b>\n"
-        message += f"Price: {value:.3f} {CURRENCY[network]}\n\n"
+        message = f"\n<b>{title}</b>\n\n"
+
+        price = info["price"]
+        usd = info["price_usd"]
+        currency = info["currency"]
+        marketplace = info["marketplace"]
+        message += f"Price: {price:.3f} {currency} ({usd:.3f} USD)\n"
+        message += f"Marketplace: {marketplace.upper()}\n"
 
     message += f"\n<u><b>{nft_name}</b></u>\n"
     message += f"Token ID: {tokenId}\n"
