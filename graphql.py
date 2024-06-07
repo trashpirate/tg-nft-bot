@@ -3,14 +3,7 @@ from credentials import QUICKNODE_API_KEY, TEST, URL
 import base64
 from web3 import HTTPProvider, Web3
 
-RPC = {
-    "ethereum-mainnet": "https://wild-still-yard.quiknode.pro/ac51481a54301aae02e01bc7651111bdfc0835dc/",
-    "bnbchain-mainnet": "https://clean-light-bush.bsc.quiknode.pro/8ef25fcc9b3b66c1511c0e8df2accaf49782ace0/",
-    "base-mainnet": "https://light-summer-theorem.base-mainnet.quiknode.pro/7e5ea5d963edab5820f279017f1f0aaa02395d5f/",
-    "avalanche-mainnet": "https://quick-twilight-river.avalanche-mainnet.quiknode.pro/21047f4234e2f035ad804edf6019e153efb4f2a5/ext/bc/C/rpc/",
-    "arbitrum-mainnet": "https://fluent-distinguished-research.arbitrum-mainnet.quiknode.pro/b1c4d69561c9735d4d15c5ad81ad88bb26409bea/",
-    "polygon-mainnet": "https://convincing-nameless-replica.matic.quiknode.pro/6dbf5fed1a503962f06a822716e4bb04155dcb2d/",
-}
+from helpers import RPC
 
 
 def getQuickNodeFilter(contractAddress):
@@ -98,12 +91,18 @@ def create_webhook(network, contract, route):
 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract)
+    stream_url = f"{URL}/{route}"
+
     if TEST == "true":
         stream_name += "-test"
     streams = get_quicknode_streams()
     if streams is not None:
         for stream in streams:
-            if stream["name"] == stream_name:
+
+            if (
+                stream["name"] == stream_name
+                and stream["destination_attributes"]["url"] == stream_url
+            ):
                 stream_id = stream["id"]
                 print(f"Webhook already exists for this collection: id = {stream_id}")
                 break
@@ -141,7 +140,7 @@ def create_webhook(network, contract, route):
             "fix_block_reorgs": 0,
             "keep_distance_from_tip": 0,
             "destination_attributes": {
-                "url": f"{URL}/{route}",
+                "url": stream_url,
                 "compression": "none",
                 "headers": {
                     "Content-Type": "application/json",
@@ -165,6 +164,13 @@ def create_test_webhook(network, contract, route):
     # network = "ethereum-mainnet"
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
 
+    blocks = {
+        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 19628337,
+        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19889298,
+        "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15448852,
+        "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2": 14724598,
+    }
+
     # transfer
     # "start_range": 19976946,
     # "end_range": 19976948,
@@ -182,8 +188,19 @@ def create_test_webhook(network, contract, route):
     # flameling purchase
     # 19458239
 
+    # flameling mint
+    # 19889298
+
     # queens mint
     # 15448852
+
+    # queens sell
+    # 15468293
+    start_block = blocks[contract] - 1
+    end_block = blocks[contract] + 1
+
+    print(start_block)
+    print(end_block)
 
     filter = getQuickNodeFilter(contract)
     url = "https://api.quicknode.com/streams/rest/v1/streams"
@@ -194,8 +211,8 @@ def create_test_webhook(network, contract, route):
         "dataset": "receipts",
         "filter_function": filter,
         "region": "usa_east",
-        "start_range": 15450503,
-        "end_range": 15450505,
+        "start_range": start_block,
+        "end_range": end_block,
         "dataset_batch_size": 1,
         "include_stream_metadata": "body",
         "destination": "webhook",

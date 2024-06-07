@@ -1,8 +1,11 @@
+from web3 import HTTPProvider, Web3
 from credentials import (
     OPENSEA_API_KEY,
 )
 import requests
+import json
 
+from helpers import RPC
 from models import (
     query_collection,
 )
@@ -62,9 +65,44 @@ CURRENCY = {
 }
 
 
-def getCollectionInfo(chain, contract):
+def getSaleInfo(network, contract, tokenId, timestamp):
 
-    url = OPENSEA_API[chain] + "contract/" + contract
+    collection = query_collection(network, contract)
+
+    slug = collection["slug"]
+
+    url = (
+        "https://api.opensea.io/api/v2/events/collection/"
+        + slug
+        + "?after="
+        + str(timestamp)
+        + "&event_type=sale"
+    )
+
+    headers = {
+        "accept": "application/json",
+        "x-api-key": OPENSEA_API_KEY,
+    }
+
+    response = requests.get(url, headers=headers)
+    data_json = response.json()
+    events = data_json["asset_events"]
+
+    if len(events) > 0:
+        for event in events:
+            tid = event["nft"]["identifier"]
+            if tid == str(tokenId):
+                price = int(event["payment"]["quantity"])
+                return Web3.from_wei(price, "ether")
+            else:
+                return 0
+    else:
+        return 0
+
+
+def getCollectionInfo(network, contract):
+
+    url = OPENSEA_API[network] + "contract/" + contract
 
     headers = {
         "accept": "application/json",
@@ -95,11 +133,7 @@ def getMetadata(network, contract, owner, tokenId, hash, txType, value):
 
     collection_name = collection["name"]
     slug = collection["slug"]
-
-    if len(collection["website"]) > 8:
-        website = collection["website"]
-    else:
-        website = "https://opensea.io/collection/" + slug
+    website = collection["website"]
 
     total_supply = getTotalSupply(slug)
 
@@ -153,6 +187,8 @@ def getMetadata(network, contract, owner, tokenId, hash, txType, value):
     message += '<a href="' + magicEden + '">MagicEden</a>\n'
 
     message += "\n\nAD: "
-    message += '<a href="https://t.me/EARNCRYPTOALPHA">Subscribe to EARNCryptoAlpha Channel!</a>\n'
+    message += (
+        '<a href="https://t.me/EARNServices">Book a slot to show your ad here!</a>\n'
+    )
     message += "\n<i>Powered by @EARNServices</i>"
     return [nft_image, message]

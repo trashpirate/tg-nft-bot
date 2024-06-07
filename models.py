@@ -85,6 +85,7 @@ def query_collection_by_webhook(webhookId):
 
 def query_collection_by_chat(chatId):
     with flask_app.app_context():
+
         collections = CollectionConfigs.query.filter(
             CollectionConfigs.chats.any(chatId)
         ).all()
@@ -102,6 +103,22 @@ def query_collection_by_chat(chatId):
             for collection in collections
         ]
     return collection_list
+
+
+def query_collection_by_id(cid):
+    with flask_app.app_context():
+        collection = CollectionConfigs.query.filter_by(id=cid).first()
+        collection_dict = {
+            "id": collection.id,
+            "name": collection.name,
+            "slug": collection.slug,
+            "contract": collection.contract,
+            "network": collection.network,
+            "website": collection.website,
+            "webhookId": collection.webhookId,
+            "chats": collection.chats,
+        }
+    return collection_dict
 
 
 def query_network_by_webhook(webhookId):
