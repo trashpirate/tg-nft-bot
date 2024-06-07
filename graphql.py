@@ -164,6 +164,13 @@ def create_test_webhook(network, contract, route):
     # network = "ethereum-mainnet"
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
 
+    blocks = {
+        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 19628337,
+        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19889298,
+        "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15448852,
+        "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2": 14724598,
+    }
+
     # transfer
     # "start_range": 19976946,
     # "end_range": 19976948,
@@ -189,6 +196,11 @@ def create_test_webhook(network, contract, route):
 
     # queens sell
     # 15468293
+    start_block = blocks[contract] - 1
+    end_block = blocks[contract] + 1
+
+    print(start_block)
+    print(end_block)
 
     filter = getQuickNodeFilter(contract)
     url = "https://api.quicknode.com/streams/rest/v1/streams"
@@ -199,8 +211,8 @@ def create_test_webhook(network, contract, route):
         "dataset": "receipts",
         "filter_function": filter,
         "region": "usa_east",
-        "start_range": 15468292,
-        "end_range": 15468294,
+        "start_range": start_block,
+        "end_range": end_block,
         "dataset_batch_size": 1,
         "include_stream_metadata": "body",
         "destination": "webhook",

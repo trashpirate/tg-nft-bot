@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from http import HTTPStatus
 import logging
 from typing import Optional
+import traceback
 
 from flask import Response, request
 from werkzeug.routing import Rule
@@ -237,8 +238,8 @@ def parse_tx(json_data):
                         type=txType,
                         value=value,
                     )
-    except Exception as e:
-        print(e)
+    except Exception:
+        traceback.print_exc()
         return None
 
 
@@ -324,8 +325,7 @@ def bot_removed(update: Update, context: CallbackContext) -> None:
     if old_status in [ChatMember.ADMINISTRATOR, ChatMember.MEMBER] and (
         new_status == ChatMember.BANNED or new_status == ChatMember.LEFT
     ):
-        # TODO:
-        # delete webhook if no chat left
+
         collections = query_collection_by_chat(update.effective_chat.id)
 
         for collection in collections:
@@ -481,7 +481,8 @@ async def enter_website(update: Update, context: CustomContext):
                 )
 
                 status = "_Collection is updated._"
-        except:
+        except Exception:
+            traceback.print_exc()
             status = "_Configuration failed. Please start over and try again._"
 
         message_text = title_message
@@ -641,7 +642,6 @@ async def select_action(update: Update, context: CustomContext):
         try:
             message_text = "<b>BOT CONFIGURATIONS:</b>\n\n"
             index = 1
-            row_buttons = []
             config_buttons = []
             rows: list[dict] = query_table()
             for r in rows:
@@ -680,19 +680,17 @@ async def select_action(update: Update, context: CustomContext):
 
                 message_text = message_text[:-2] + "\n\n"
 
-                row_buttons.append(
+                row_buttons = [
                     InlineKeyboardButton(
-                        "CONFIG " + str(index), callback_data="cid-" + str(cid)
-                    )
-                )
-                if index % 3 == 0:
-                    config_buttons.append(row_buttons)
-                    row_buttons = []
-
+                        "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
+                    ),
+                    InlineKeyboardButton(
+                        "DELETE CONFIG " + str(index), callback_data="del-" + str(cid)
+                    ),
+                ]
+                config_buttons.append(row_buttons)
                 index += 1
 
-            if len(row_buttons) != 0 and len(row_buttons) < 3:
-                config_buttons.append(row_buttons)
             config_buttons.append(
                 [
                     InlineKeyboardButton("RETURN", callback_data="return"),
@@ -710,8 +708,8 @@ async def select_action(update: Update, context: CustomContext):
 
             return ADD_CONFIG
 
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             reply_markup = return_menu()
             await query.edit_message_text(
                 text="No configurations found.",
@@ -758,7 +756,7 @@ async def add_collection(update: Update, context: CustomContext):
 
         return MAIN
 
-    if query.data[:3] == "cid":
+    if query.data[:3] == "add":
         collection = query_collection_by_id(int(query.data[4:]))
         chats: list[int] = collection["chats"]
 
@@ -782,12 +780,31 @@ async def add_collection(update: Update, context: CustomContext):
             name = collection["name"]
             status = f"<i>{name} collection aready added.</i>"
 
+    if query.data[:3] == "del":
+        collection = query_collection_by_id(int(query.data[4:]))
+
+        if len(collection["chats"]) == 1 and collection["chats"][0] == context.chat:
+            name = collection["name"]
+            delete_webhook(collection["webhookId"])
+            delete_config_by_id(collection["id"])
+
+            status = f"<i>{name} collection removed from group chat.</i>"
+        else:
+            new_chats = []
+            for chat in collection["chats"]:
+                if chat != context.chat:
+                    new_chats.append(chat)
+
+            update_chats_by_id(collection["id"], new_chats)
+            name = collection["name"]
+            status = f"<i>{name} collection removed.</i>"
     try:
         message_text = "<b>BOT CONFIGURATIONS:</b>\n\n"
         index = 1
         row_buttons = []
         config_buttons = []
         rows: list[dict] = query_table()
+        print(rows)
         for r in rows:
             cid = r["id"]
             name = r["name"]
@@ -823,21 +840,20 @@ async def add_collection(update: Update, context: CustomContext):
                 message_text += chat_name + ", "
 
             message_text = message_text[:-2] + "\n\n"
-            message_text += status
 
-            row_buttons.append(
+            row_buttons = [
                 InlineKeyboardButton(
-                    "CONFIG " + str(index), callback_data="cid-" + str(cid)
-                )
-            )
-            if index % 3 == 0:
-                config_buttons.append(row_buttons)
-                row_buttons = []
+                    "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
+                ),
+                InlineKeyboardButton(
+                    "DELETE CONFIG " + str(index), callback_data="del-" + str(cid)
+                ),
+            ]
+            config_buttons.append(row_buttons)
 
             index += 1
 
-        if len(row_buttons) != 0 and len(row_buttons) < 3:
-            config_buttons.append(row_buttons)
+        message_text += status
         config_buttons.append(
             [
                 InlineKeyboardButton("RETURN", callback_data="return"),
@@ -855,8 +871,8 @@ async def add_collection(update: Update, context: CustomContext):
 
         return ADD_CONFIG
 
-    except Exception as e:
-        print(e)
+    except Exception:
+        traceback.print_exc()
         reply_markup = return_menu()
         await query.edit_message_text(
             text="No configurations found.",
