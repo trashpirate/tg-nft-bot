@@ -7,31 +7,124 @@
 [![LinkedIn: nadinaoates](https://img.shields.io/badge/LinkedIn-0a66c2?style=for-the-badge&logo=LinkedIn&logoColor=f5f5f5)](https://linkedin.com/in/nadinaoates)
 [![Twitter: N0_crypto](https://img.shields.io/badge/@N0_crypto-black?style=for-the-badge&logo=X)](https://twitter.com/N0_crypto)
 
+## About
 
-> This telegram calculates the reflections for a particular wallet that holds a ERC20 reflection token. Reflection tokens distribute rewards based on transaction fees. However, the rewards are typically distributed without individual transactions and the reflections collected by each wallet are hard to determine. This bot was designed to allow users to easily determine the amount of reflections they have collected since they acquired the token. The bot calculates the total of incoming and outgoing funds and then calculates the difference of the actual balance and the remaining funds (= reflection amount). The bot was deployed on Heroku.
+This telegram bot listens to transfer events of NFT collections on evm compatible chains. The admins of a group chat can add the bot to a group and configure their desired NFT collections. The bot was deployed on Heroku.
 
-**Token Contract: Hold ($EARN)**  
-https://etherscan.io/address/0x0b61C4f33BCdEF83359ab97673Cb5961c6435F4E#code
+### Currently supported chains:
+- Ethereum
+- BNB
+- Base
+- Arbitrum
+- Avalanche
+- Polygon
 
 ### ✨ [EARN Telegram](https://t.me/buyholdearn)
 
 ## Installation
 
+### Configure TG Bot
+Create a new bot with [@BotFather](https://t.me/BotFather) using the command ```/newbot``` and copy the bot token into the ```.env``` file.
+
+### Environment variables
+Obtain the necessary API keys and save them in a ```.env``` file:
+```
+TOKEN=<BOT_TOKEN>
+QUICKNODE_API_KEY=<API_KEY>
+OPENSEA_API_KEY=<API_KEY>
+RESERVOIR_API_KEY=<API_KEY>
+
+URL="https://ngrok-url.app"
+DATABASE_URL="postgresql://test_user:mysecretpassword@172.17.0.1:5432/local_test_db"
+TABLE='collections'
+TEST="true"
+
+```
+
+### Setup Python environment
+Setup a python environemnt and install the required packages:
 ```bash
-$ virtualenv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Configure Ngrok agent
+In order to listen to webhook events from the blockchain ngrok needs to be configured (static domain is recommended):
+```bash
+ngrok config add-authtoken <AUTH_TOKEN>
+```
+
+### Setup local database
+To test the bot locally you also need to configure a local database. Install docker and run the following commands:
+
+#### Run docker container:
+```bash
+sudo docker run --name mypostgres --net host -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres
+```
+#### Access docker container:
+```bash
+sudo docker exec -it mypostgres psql -U postgres
+```
+#### Set user priveleges:
+```bash
+CREATE DATABASE local_test_db;
+CREATE USER test_user WITH PASSWORD 'mysecretpassword';
+GRANT ALL PRIVILEGES ON DATABASE local_test_db TO test_user;
+```
+#### Access database:
+```bash
+sudo docker exec -it mypostgres psql -U postgres -d local_test_db
+```
+#### Allow user access:
+```bash
+GRANT ALL ON SCHEMA public TO test_user;
+```
+
+#### Remove docker container:
+```bash
+sudo docker rm -f mypostgres
+```
+
+#### List running containers:
+```bash
+sudo docker ps -a
+```
+#### View IP:
+```bash
+ifconfig
 ```
 
 ## Running the app
+### Development
 
-1. Create a new bot with [@BotFather](https://t.me/BotFather) using the command ```/newbot``` and copy the bot token into the ```.env``` file.
-2. Get the RPC url and API Key for ```alchemy-sdk``` and the chain you want to interact with. Add the credentials to the ```.env``` file.
-3. Start the app: 
-    ```bash
-    $ python main.py
-    ```
+#### Start the bot:
 
+```bash
+$ python main.py
+```
+#### Start ngrok: 
+```bash
+ngrok http --domain=<ngrok-url>.ngrok-free.app 8000
+```
+
+#### Listen to webhook events:
+
+
+### Production
+
+#### Edit Database:
+
+1. Connect to Heroku
+```bash
+heroku login
+heroku pg:psql --app app-name
+```
+2. Query database/table and update entry
+```bash
+SELECT * FROM collections;
+UPDATE collections SET <variable> = <id> WHERE id = <id>;
+```
 
 ## Author
 
@@ -46,52 +139,13 @@ $ pip install -r requirements.txt
 ## 📝 License
 
 Copyright © 2024 [Nadina Oates](https://github.com/trashpirate).
-
 This project is [MIT](https://github.com/trashpirate/reflections-bot/blob/master/LICENSE) licensed.
 
 
 
 
 
-# start ngrok
-```
-ngrok http --domain=exotic-crayfish-striking.ngrok-free.app 8000
-```
 
 
 
-# run docker container
-```
-sudo docker run --name mypostgres --net host -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres
-```
-# remove docker container
-```
-sudo docker rm -f mypostgres
 
-```
-# access docker container
-```
-sudo docker exec -it mypostgres psql -U postgres
-```
-# set user priveleges
-```
-CREATE DATABASE local_test_db;
-CREATE USER test_user WITH PASSWORD 'mysecretpassword';
-GRANT ALL PRIVILEGES ON DATABASE local_test_db TO test_user;
-```
-# access database
-```
-sudo docker exec -it mypostgres psql -U postgres -d local_test_db
-```
-# allow user access
-```
-GRANT ALL ON SCHEMA public TO test_user;
-```
-# List running postgres
-```
-sudo docker ps -a
-```
-# IP
-```
-ifconfig
-```
