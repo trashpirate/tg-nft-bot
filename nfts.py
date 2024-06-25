@@ -4,7 +4,9 @@ from credentials import (
     RESERVOIR_API_KEY,
 )
 import requests
-import json
+from PIL import Image
+from io import BytesIO
+import tempfile
 
 from helpers import RPC
 from models import (
@@ -82,6 +84,29 @@ RESERVOIR_URL = {
     "arbitrum-mainnet": "https://api-arbitrum.reservoir.tools/",
     "polygon-mainnet": "https://api-polygon.reservoir.tools/",
 }
+
+
+def downloadImage(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        image = Image.open(BytesIO(response.content))
+        file_extension = image.format.lower()  # e.g., 'jpeg' or 'png'
+        if file_extension == "jpeg":
+            file_extension = "jpg"
+
+        # Create a temporary file to save the image
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=f".{file_extension}"
+        ) as tmp_file:
+            image.save(tmp_file, format=image.format)
+            temp_file_path = tmp_file.name
+        return temp_file_path
+
+    except Exception as e:
+        print(e)
+        raise
 
 
 def getSaleInfo(network, contract, tokenId):
@@ -208,4 +233,11 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
         '<a href="https://t.me/EARNServices">Book a slot to show your ad here!</a>\n'
     )
     message += "\n<i>Powered by @EARNServices</i>"
-    return [nft_image, message]
+
+    try:
+        img = downloadImage(nft_image)
+    except Exception as e:
+        print(e)
+        img = None
+
+    return [img, message]

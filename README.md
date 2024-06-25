@@ -38,7 +38,6 @@ URL="https://ngrok-url.app"
 DATABASE_URL="postgresql://test_user:mysecretpassword@172.17.0.1:5432/local_test_db"
 TABLE='collections'
 TEST="true"
-
 ```
 
 ### Setup Python environment
@@ -106,6 +105,10 @@ $ python main.py
 #### Start ngrok: 
 ```bash
 ngrok http --domain=<ngrok-url>.ngrok-free.app 8000
+```
+#### Kill running process:
+```bash
+kill -9 $(ps -A | grep python | awk '{print $1}')
 ```
 
 #### Listen to webhook events:
