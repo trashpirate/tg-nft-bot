@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from http import HTTPStatus
 import logging
+import os
 from typing import Optional
 import traceback
+
 
 from flask import Response, request
 from werkzeug.routing import Rule
@@ -217,7 +219,13 @@ def parse_tx(json_data):
                         if info is None:
                             return None
                     else:
-                        info = {"type": "mint"}
+                        info = {
+                            "type": "mint",
+                            "price": "N/A",
+                            "price_usd": "N/A",
+                            "currency": "N/A",
+                            "marketplace": "N/A",
+                        }
                     return dict(
                         webhookId=webhookId,
                         tokenId=tokenId,
@@ -358,12 +366,27 @@ async def webhook_update(
     chats: list[str] = collection["chats"]
     for chat_id in chats:
         try:
-            await context.bot.send_photo(
-                chat_id=chat_id, photo=img, caption=text, parse_mode="HTML"
-            )
-        except:
-            print("Sending message failed")
+            if img is None:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    parse_mode="HTML",
+                )
+            else:
+                await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=open(img, "rb"),
+                    caption=text,
+                    parse_mode="HTML",
+                )
+
+        except Exception as e:
+            print("Sending message failed:")
+            print(e)
+
             return
+        finally:
+            os.remove(img)
 
 
 async def update_queue(new_data):
@@ -632,52 +655,56 @@ async def select_action(update: Update, context: CustomContext):
             index = 1
             config_buttons = []
             rows: list[dict] = query_table()
-            for r in rows:
-                cid = r["id"]
-                name = r["name"]
-                network = r["network"]
-                contract = r["contract"]
-                website = r["website"]
-                chats = r["chats"]
-
-                chats_isAdmin = []
-                for chat in chats:
-                    admins = await application.bot.get_chat_administrators(chat)
-                    admin_ids = [admin["user"]["id"] for admin in admins]
-                    if update.effective_user.id in admin_ids:
-                        chats_isAdmin.append(chat)
-
-                # throw exception if user is not admin in any of the configured groups
-                if len(chats_isAdmin) == 0:
-                    raise Exception("User is not admin of any configurations.")
-
-                if len(r["website"]) > 8:
+            if len(rows) == 0:
+                message_text = "No collections configured."
+            else:
+                for r in rows:
+                    cid = r["id"]
+                    name = r["name"]
+                    network = r["network"]
+                    contract = r["contract"]
                     website = r["website"]
-                else:
-                    website = "https://opensea.io/collection/" + r["slug"]
+                    chats = r["chats"]
 
-                message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
+                    chats_isAdmin = []
+                    for chat in chats:
+                        admins = await application.bot.get_chat_administrators(chat)
+                        admin_ids = [admin["user"]["id"] for admin in admins]
+                        if update.effective_user.id in admin_ids:
+                            chats_isAdmin.append(chat)
 
-                for chat in chats_isAdmin:
-                    group_chat = await context.bot.get_chat(chat)
-                    if group_chat.title is None:
-                        chat_name = group_chat.username
+                    # throw exception if user is not admin in any of the configured groups
+                    if len(chats_isAdmin) == 0:
+                        raise Exception("User is not admin of any configurations.")
+
+                    if len(r["website"]) > 8:
+                        website = r["website"]
                     else:
-                        chat_name = group_chat.title
-                    message_text += chat_name + ", "
+                        website = "https://opensea.io/collection/" + r["slug"]
 
-                message_text = message_text[:-2] + "\n\n"
+                    message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
-                row_buttons = [
-                    InlineKeyboardButton(
-                        "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
-                    ),
-                    InlineKeyboardButton(
-                        "DELETE CONFIG " + str(index), callback_data="del-" + str(cid)
-                    ),
-                ]
-                config_buttons.append(row_buttons)
-                index += 1
+                    for chat in chats_isAdmin:
+                        group_chat = await context.bot.get_chat(chat)
+                        if group_chat.title is None:
+                            chat_name = group_chat.username
+                        else:
+                            chat_name = group_chat.title
+                        message_text += chat_name + ", "
+
+                    message_text = message_text[:-2] + "\n\n"
+
+                    row_buttons = [
+                        InlineKeyboardButton(
+                            "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
+                        ),
+                        InlineKeyboardButton(
+                            "DELETE CONFIG " + str(index),
+                            callback_data="del-" + str(cid),
+                        ),
+                    ]
+                    config_buttons.append(row_buttons)
+                    index += 1
 
             config_buttons.append(
                 [

@@ -165,8 +165,8 @@ def create_test_webhook(network, contract, route):
     # contract = "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775"
     # ETHEREUM:0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775:188
     blocks = {
-        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 20041787,
-        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19889298,
+        "0x12A961E8cC6c94Ffd0ac08deB9cde798739cF775": 20041787,  # sale: 20041787, mint: 20102872
+        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19458239,  # sale: 19458239, mint: 20103930
         "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15497265,
         "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2": 14724598,
     }
@@ -190,9 +190,6 @@ def create_test_webhook(network, contract, route):
 
     start_block = blocks[contract] - 1
     end_block = blocks[contract] + 1
-
-    print(start_block)
-    print(end_block)
 
     filter = getQuickNodeFilter(contract)
     url = "https://api.quicknode.com/streams/rest/v1/streams"
