@@ -45,6 +45,7 @@ moralis==0.1.46
 multidict==6.0.5
 packaging==24.0
 parsimonious==0.10.0
+pillow==10.3.0
 protobuf==5.26.1
 psycopg2-binary==2.9.9
 pycryptodome==3.20.0
