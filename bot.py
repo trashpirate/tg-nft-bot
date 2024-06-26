@@ -14,6 +14,7 @@ from telegram import (
     ChatMember,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    LinkPreviewOptions,
     Update,
     InlineQueryResultArticle,
     InputTextMessageContent,
@@ -366,27 +367,18 @@ async def webhook_update(
     chats: list[str] = collection["chats"]
     for chat_id in chats:
         try:
-            if img is None:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=text,
-                    parse_mode="HTML",
-                )
-            else:
-                await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=open(img, "rb"),
-                    caption=text,
-                    parse_mode="HTML",
-                )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                link_preview_options=LinkPreviewOptions(url=img, show_above_text=True),
+                parse_mode="HTML",
+            )
 
         except Exception as e:
             print("Sending message failed:")
             print(e)
 
             return
-        finally:
-            os.remove(img)
 
 
 async def update_queue(new_data):
