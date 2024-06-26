@@ -192,6 +192,7 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     magicEden = MAGIC_EDEN[network] + contract + "/" + tokenId
     scan = SCANS[network]
 
+    # message = '<a href="' + nft_image + '">&#8205;</a>'
     if info["type"] == "mint":
         title = (f"NEW {collection_name} MINT! 🔥").upper()
         message = f"\n<b>{title}</b>\n\n"
@@ -234,10 +235,4 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     )
     message += "\n<i>Powered by @EARNServices</i>"
 
-    try:
-        img = downloadImage(nft_image)
-    except Exception as e:
-        print(e)
-        img = None
-
-    return [img, message]
+    return [nft_image, message]
