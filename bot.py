@@ -376,10 +376,8 @@ async def webhook_update(
 
         except Exception as e:
             print("Sending message failed:")
-            print(e)
-
+            traceback.print_exc()
             return
-
 
 async def update_queue(new_data):
     await application.update_queue.put(
