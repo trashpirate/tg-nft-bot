@@ -181,7 +181,14 @@ def create_webhook_route(route):
 # functions
 def parse_tx(json_data):
 
-    receipts = json_data["data"]["receipts"]
+    try:
+        receipts = json_data["data"][0]["receipts"]
+    except KeyError:
+        try:
+            receipts = json_data["data"]["receipts"]
+        except Exception:
+            traceback.print_exc()
+            return None
 
     if len(receipts) < 1:
         # print("No new data.")
