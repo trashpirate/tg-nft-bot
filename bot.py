@@ -434,7 +434,12 @@ async def enter_website(update: Update, context: CustomContext):
             [name, slug] = getCollectionInfo(context.network, context.contract)
 
             if website[:8] != "https://":
-                website = "https://opensea.io/assets/" + OPENSEA_NETWORK[context.network] + "/" + context.contract
+                website = (
+                    "https://opensea.io/assets/"
+                    + OPENSEA_NETWORK[context.network]
+                    + "/"
+                    + context.contract
+                )
 
             route = "/" + slug
             create_webhook_route(route)
@@ -978,7 +983,9 @@ async def start_app():
 
     # define handlers
     application.add_handler(conv_handler)
-    application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
+    application.add_handler(
+        TypeHandler(type=WebhookUpdate, callback=webhook_update, block=False)
+    )
     application.add_handler(
         ChatMemberHandler(bot_removed, ChatMemberHandler.MY_CHAT_MEMBER)
     )
