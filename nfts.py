@@ -209,6 +209,7 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     response = requests.get(url, headers=headers)
     data_json = response.json()
 
+    print(data_json)
     nft_data = data_json["nft"]
 
     nft_name = nft_data["name"]
