@@ -1,3 +1,4 @@
+import json
 from web3 import HTTPProvider, Web3
 from credentials import (
     OPENSEA_API_KEY,
@@ -12,6 +13,15 @@ from helpers import RPC
 from models import (
     query_collection,
 )
+
+OPENSEA_NETWORK = {
+    "ethereum-mainnet": "ethereum",
+    "bnbchain-mainnet": "bsc",
+    "base-mainnet": "base",
+    "avalanche-mainnet": "avalanche",
+    "arbitrum-mainnet": "arbitrum",
+    "polygon-mainnet": "polygon",
+}
 
 OPENSEA_API = {
     "ethereum-mainnet": "https://api.opensea.io/api/v2/chain/ethereum/",
@@ -145,9 +155,26 @@ def getCollectionInfo(network, contract):
         "x-api-key": OPENSEA_API_KEY,
     }
     response = requests.get(url, headers=headers)
-    data_json = response.json()
+    data_json: dict = response.json()
 
-    return [data_json["name"], data_json["collection"]]
+    if "name" in data_json.keys() and len(data_json["name"]) > 0:
+        name: str = data_json["name"]
+    else:
+        w3 = Web3(Web3.HTTPProvider(RPC[network]))
+
+        with open("./assets/NFT.json", "r") as f:
+            abi = json.load(f)
+            contract_instance = w3.eth.contract(address=contract, abi=abi)
+            name: str = contract_instance.functions.name.call()
+
+    if "collection" in data_json.keys() and len(data_json["collection"]) > 0:
+        collection = data_json["collection"]
+
+    else:
+        collection = name.replace(" ", "-")
+        collection = collection.lower()
+
+    return [name, collection]
 
 
 def getTotalSupply(slug):

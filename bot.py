@@ -50,7 +50,7 @@ from models import (
 )
 from credentials import TEST, TOKEN, URL
 from graphql import create_test_webhook, create_webhook, delete_webhook
-from nfts import getCollectionInfo, getMetadata, getSaleInfo
+from nfts import getCollectionInfo, getMetadata, getSaleInfo, OPENSEA_NETWORK
 from app import flask_app
 
 # helpers
@@ -434,7 +434,7 @@ async def enter_website(update: Update, context: CustomContext):
             [name, slug] = getCollectionInfo(context.network, context.contract)
 
             if website[:8] != "https://":
-                website = "https://opensea.io/collection/" + slug
+                website = "https://opensea.io/assets/" + OPENSEA_NETWORK[context.network] + "/" + context.contract
 
             route = "/" + slug
             create_webhook_route(route)
