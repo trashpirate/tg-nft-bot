@@ -181,7 +181,7 @@ def create_webhook_route(route):
 # functions
 def parse_tx(json_data):
 
-    receipts = json_data["data"]["receipts"]
+    receipts = json_data["data"][0]["receipts"]
 
     if len(receipts) < 1:
         # print("No new data.")
