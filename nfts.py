@@ -13,6 +13,7 @@ from helpers import RPC
 from models import (
     query_collection,
 )
+from urllib.request import urlopen
 
 OPENSEA_NETWORK = {
     "ethereum-mainnet": "ethereum",
@@ -32,13 +33,13 @@ OPENSEA_API = {
     "polygon-mainnet": "https://api.opensea.io/api/v2/chain/matic/",
 }
 
-OPENSEA_LINK = {
-    "ethereum-mainnet": "https://api.opensea.io/api/v2/chain/ethereum/",
-    "bnbchain-mainnet": "https://api.opensea.io/api/v2/chain/bsc/",
-    "base-mainnet": "https://api.opensea.io/api/v2/chain/base/",
-    "avalanche-mainnet": "https://api.opensea.io/api/v2/chain/avalanche/",
-    "arbitrum-mainnet": "https://api.opensea.io/api/v2/chain/arbitrum/",
-    "polygon-mainnet": "https://api.opensea.io/api/v2/chain/matic/",
+OPENSEA = {
+    "ethereum-mainnet": "https://opensea.io/assets/ethereum/",
+    "bnbchain-mainnet": "https://opensea.io/assets/bsc/",
+    "base-mainnet": "https://opensea.io/assets/base/",
+    "avalanche-mainnet": "https://opensea.io/assets/avalanche/",
+    "arbitrum-mainnet": "https://opensea.io/assets/arbitrum/",
+    "polygon-mainnet": "https://opensea.io/assets/matic/",
 }
 
 RARIBLE = {
@@ -189,6 +190,32 @@ def getTotalSupply(slug):
     return data_json["total_supply"]
 
 
+def getUrl(ipfsLink: str):
+    suburl = ipfsLink.replace("://", "/")
+    return "https://dweb.link/" + suburl
+
+
+def getNftData(network: str, contract: str, tokenId: str):
+    w3 = Web3(Web3.HTTPProvider(RPC[network]))
+
+    with open("./assets/NFT.json", "r") as f:
+        abi = json.load(f)
+        contract_instance = w3.eth.contract(address=contract, abi=abi)
+        metadata_url = contract_instance.functions.tokenURI(
+            Web3.to_int(int(tokenId))
+        ).call()
+
+    weburl = getUrl(metadata_url)
+
+    headers = {
+        "accept": "application/json",
+    }
+    response = requests.get(weburl, headers=headers)
+    data_json = response.json()
+
+    return data_json
+
+
 def getMetadata(network, contract, owner, tokenId, hash, info):
 
     tokenId = str(tokenId)
@@ -201,21 +228,21 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     total_supply = getTotalSupply(slug)
 
     # get opensea data
-    url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId
-    headers = {
-        "accept": "application/json",
-        "x-api-key": OPENSEA_API_KEY,
-    }
-    response = requests.get(url, headers=headers)
-    data_json = response.json()
+    # url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId
+    # headers = {
+    #     "accept": "application/json",
+    #     "x-api-key": OPENSEA_API_KEY,
+    # }
+    # response = requests.get(url, headers=headers)
+    # data_json = response.json()
+    # nft_data = data_json["nft"]
 
-    print(data_json)
-    nft_data = data_json["nft"]
+    nft_data = getNftData(network, contract, tokenId)
 
     nft_name = nft_data["name"]
-    nft_image = nft_data["image_url"]
+    nft_image = getUrl(nft_data["image"])
 
-    opensea = nft_data["opensea_url"]
+    opensea = OPENSEA[network] + contract + "/" + tokenId
     rarible = RARIBLE[network] + contract + ":" + tokenId
     magicEden = MAGIC_EDEN[network] + contract + "/" + tokenId
     scan = SCANS[network]
@@ -242,9 +269,9 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     message += '<a href="' + scan + "tx/" + hash + '">TX Hash</a> | '
     message += '<a href="' + scan + "token/" + contract + "#code" + '">Contract</a>\n'
 
-    if nft_data["traits"] is not None:
+    if nft_data["attributes"] is not None:
         message += "\n<u>Traits:</u>\n"
-        for attr in nft_data["traits"]:
+        for attr in nft_data["attributes"]:
             message += f'{attr["trait_type"]}: {attr["value"]}\n'
 
     message += f"\nTotal minted: {total_supply}\n"
