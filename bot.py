@@ -181,7 +181,7 @@ def create_webhook_route(route):
 # functions
 def parse_tx(json_data):
 
-    receipts = json_data["data"][0]["receipts"]
+    receipts = json_data["data"]["receipts"]
 
     if len(receipts) < 1:
         # print("No new data.")
@@ -227,6 +227,7 @@ def parse_tx(json_data):
                             "currency": "N/A",
                             "marketplace": "N/A",
                         }
+
                     return dict(
                         webhookId=webhookId,
                         tokenId=tokenId,
@@ -378,6 +379,7 @@ async def webhook_update(
             print("Sending message failed:")
             traceback.print_exc()
             return
+
 
 async def update_queue(new_data):
     await application.update_queue.put(
