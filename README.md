@@ -1,4 +1,4 @@
-# TELEGRAM REFLECTIONS BOT
+# TELEGRAM NFT BOT
 ![Version](https://img.shields.io/badge/version-1.1.0-blue.svg?style=for-the-badge)
 ![Python](https://img.shields.io/badge/python-v3.10.12-blue.svg?style=for-the-badge)
 [![License: MIT](https://img.shields.io/github/license/trashpirate/reflections-bot?style=for-the-badge)](https://github.com/trashpirate/reflections-bot/blob/master/LICENSE)
