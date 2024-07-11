@@ -178,16 +178,23 @@ def getCollectionInfo(network, contract):
     return [name, collection]
 
 
-def getTotalSupply(slug):
-    url = "https://api.opensea.io/api/v2/collections/" + slug
+def getTotalSupply(network, contract):
+    # url = "https://api.opensea.io/api/v2/collections/" + slug
 
-    headers = {
-        "accept": "application/json",
-        "x-api-key": OPENSEA_API_KEY,
-    }
-    response = requests.get(url, headers=headers)
-    data_json = response.json()
-    return data_json["total_supply"]
+    # headers = {
+    #     "accept": "application/json",
+    #     "x-api-key": OPENSEA_API_KEY,
+    # }
+    # response = requests.get(url, headers=headers)
+    # data_json = response.json()
+    # return data_json["total_supply"]
+    w3 = Web3(Web3.HTTPProvider(RPC[network]))
+
+    with open("./assets/NFT.json", "r") as f:
+        abi = json.load(f)
+        contract_instance = w3.eth.contract(address=contract, abi=abi)
+        totalSupply = contract_instance.functions.totalSupply().call()
+        return totalSupply
 
 
 def getUrl(ipfsLink: str):
@@ -225,7 +232,7 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     slug = collection["slug"]
     website = collection["website"]
 
-    total_supply = getTotalSupply(slug)
+    total_supply = getTotalSupply(network, contract)
 
     # get opensea data
     # url = OPENSEA_API[network] + "contract/" + contract + "/nfts/" + tokenId

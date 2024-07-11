@@ -199,6 +199,7 @@ def parse_tx(json_data):
         webhookId = json_data["metadata"]["stream_id"]
         network = json_data["metadata"]["network"]
 
+        data = []
         for receipt in receipts:
             for log in receipt["logs"]:
 
@@ -235,15 +236,18 @@ def parse_tx(json_data):
                             "marketplace": "N/A",
                         }
 
-                    return dict(
-                        webhookId=webhookId,
-                        tokenId=tokenId,
-                        contract=contract,
-                        fromAddress=fromAddress,
-                        toAddress=toAddress,
-                        hash=hash,
-                        info=info,
+                    data.append(
+                        dict(
+                            webhookId=webhookId,
+                            tokenId=tokenId,
+                            contract=contract,
+                            fromAddress=fromAddress,
+                            toAddress=toAddress,
+                            hash=hash,
+                            info=info,
+                        )
                     )
+        return data
     except Exception:
         traceback.print_exc()
         return None
@@ -356,36 +360,39 @@ async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
 
-    data = parse_tx(update.data)
-    if data is None:
+    data_list = parse_tx(update.data)
+    if data_list is None or len(data_list) == 0:
         return
 
-    collection = query_collection_by_webhook(data["webhookId"])
-    network = collection["network"]
+    for data in data_list:
+        collection = query_collection_by_webhook(data["webhookId"])
+        network = collection["network"]
 
-    [img, text] = getMetadata(
-        network,
-        data["contract"],
-        data["toAddress"],
-        data["tokenId"],
-        data["hash"],
-        data["info"],
-    )
+        [img, text] = getMetadata(
+            network,
+            data["contract"],
+            data["toAddress"],
+            data["tokenId"],
+            data["hash"],
+            data["info"],
+        )
 
-    chats: list[str] = collection["chats"]
-    for chat_id in chats:
-        try:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                link_preview_options=LinkPreviewOptions(url=img, show_above_text=True),
-                parse_mode="HTML",
-            )
+        chats: list[str] = collection["chats"]
+        for chat_id in chats:
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    link_preview_options=LinkPreviewOptions(
+                        url=img, show_above_text=True
+                    ),
+                    parse_mode="HTML",
+                )
 
-        except Exception as e:
-            print("Sending message failed:")
-            traceback.print_exc()
-            return
+            except Exception as e:
+                print("Sending message failed:")
+                traceback.print_exc()
+                return
 
 
 async def update_queue(new_data):
