@@ -169,7 +169,7 @@ def create_test_webhook(network, contract, route):
         "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19458239,  # sale: 19458239, mint: 20103930
         "0x897cf93Cef78f8DddFf41962cD63CF030dFF81C8": 15497265,
         "0x0528C4DFc247eA8b678D0CA325427C4ca639DEC2": 15987005,
-        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 16935164,  # multi: 16935164, single: 16929599
+        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 16929599,  # multi: 16935164, single: 16929599
     }
 
     stream_name = network + "-" + Web3.to_checksum_address(contract)
