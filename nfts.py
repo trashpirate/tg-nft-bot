@@ -1,4 +1,5 @@
 import json
+import traceback
 from web3 import HTTPProvider, Web3
 from credentials import (
     OPENSEA_API_KEY,
@@ -197,9 +198,10 @@ def getTotalSupply(network, contract):
         return totalSupply
 
 
-def getUrl(ipfsLink: str):
+def getUrl(ipfsLink: str, gateway: str):
     suburl = ipfsLink.replace("://", "/")
-    return "https://dweb.link/" + suburl
+    url = "https://" + gateway + "/" + suburl
+    return url
 
 
 def getNftData(network: str, contract: str, tokenId: str):
@@ -212,13 +214,26 @@ def getNftData(network: str, contract: str, tokenId: str):
             Web3.to_int(int(tokenId))
         ).call()
 
-    weburl = getUrl(metadata_url)
+    try:
+        weburl = getUrl(metadata_url, "dweb.link")  # "dweb.link"
 
-    headers = {
-        "accept": "application/json",
-    }
-    response = requests.get(weburl, headers=headers)
-    data_json = response.json()
+        headers = {
+            "accept": "application/json",
+        }
+        response = requests.get(weburl, headers=headers)
+        data_json = response.json()
+    except:
+        try:
+            weburl = getUrl(metadata_url, "ipfs.io")  # "ipfs.io"
+
+            headers = {
+                "accept": "application/json",
+            }
+            response = requests.get(weburl, headers=headers)
+            data_json = response.json()
+        except Exception as e:
+            print("Fetching metadata failed:")
+            traceback.print_exc()
 
     return data_json
 
@@ -247,7 +262,7 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     nft_data = getNftData(network, contract, tokenId)
 
     nft_name = nft_data["name"]
-    nft_image = getUrl(nft_data["image"])
+    nft_image = getUrl(nft_data["image"], "ipfs.io")
 
     opensea = OPENSEA[network] + contract + "/" + tokenId
     rarible = RARIBLE[network] + contract + ":" + tokenId
