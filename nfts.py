@@ -97,6 +97,8 @@ RESERVOIR_URL = {
     "polygon-mainnet": "https://api-polygon.reservoir.tools/",
 }
 
+gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
+
 
 def downloadImage(url):
     try:
@@ -198,74 +200,55 @@ def getTotalSupply(network, contract):
         return totalSupply
 
 
-def isValidImageUrl(url: str):
-
-    try:
-        # Send a GET request to the URL
-        response = requests.get(url)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Try to open the image
-            image = Image.open(BytesIO(response.content))
-            # Try to load the image to ensure it is valid
-            image.verify()
-            return True
-        else:
-            print(f"Error: Received status code {response.status_code}")
-            return False
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-        traceback.print_exc()
-        return False
-    except (IOError, SyntaxError) as e:
-        print(f"Invalid image: {e}")
-        traceback.print_exc()
-        return False
-
-
-def isValidJsonUrl(url):
-    try:
-        # Send a GET request to the URL
-        response = requests.get(url)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            try:
-                # Try to parse the response content as JSON
-                json_data = response.json()
-                return True, json_data
-            except ValueError as e:
-                print(f"Invalid JSON: {e}")
-                traceback.print_exc()
-                return False, None
-        else:
-            print(f"Error: Received status code {response.status_code}")
-            return False, None
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-        traceback.print_exc()
-        return False, None
-
-
-def getUrl(ipfsLink: str, isImage: bool = False):
-
-    gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
+def getImageUrl(ipfsLink: str):
 
     for gateway in gateways:
         suburl = ipfsLink.replace("://", "/")
         url = "https://" + gateway + "/" + suburl
 
-        if isImage:
-            isValid = isValidImageUrl(url)
-            if isValid:
-                break
-        else:
-            isValid = isValidJsonUrl(url)
-            if isValid:
-                break
-    print("URL: ", url)
-    return url
+        try:
+            # Send a GET request to the URL
+            response = requests.get(url)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Try to open the image
+                image = Image.open(BytesIO(response.content))
+                # Try to load the image to ensure it is valid
+                image.verify()
+                return url
+            else:
+                print(f"Error: Received status code {response.status_code}")
+        except Exception as e:
+            print(f"image request failed: {e}")
+
+    return ""
+
+
+def getIPFSData(ipfsLink: str):
+
+    for gateway in gateways:
+        suburl = ipfsLink.replace("://", "/")
+        url = "https://" + gateway + "/" + suburl
+
+        try:
+            # Send a GET request to the URL
+            response = requests.get(url)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                try:
+                    # Try to parse the response content as JSON
+                    json_data = response.json()
+                    return json_data
+                except Exception as e:
+                    print(f"Invalid JSON: {e}")
+            else:
+                print(f"Error: Received status code {response.status_code}")
+        except Exception as e:
+            print(f"Request metadata failed: {e}")
+
+    return None
 
 
 def getNftData(network: str, contract: str, tokenId: str):
@@ -278,17 +261,7 @@ def getNftData(network: str, contract: str, tokenId: str):
             Web3.to_int(int(tokenId))
         ).call()
 
-    try:
-        weburl = getUrl(metadata_url)  # "dweb.link"
-
-        headers = {
-            "accept": "application/json",
-        }
-        response = requests.get(weburl, headers=headers)
-        data_json = response.json()
-    except:
-        print("Fetching metadata failed:")
-        traceback.print_exc()
+    data_json = getIPFSData(metadata_url)
 
     return data_json
 
@@ -307,7 +280,7 @@ def getMetadata(network, contract, owner, tokenId, hash, info):
     nft_data = getNftData(network, contract, tokenId)
 
     nft_name = nft_data["name"]
-    nft_image = getUrl(nft_data["image"], isImage=True)
+    nft_image = getImageUrl(nft_data["image"])
 
     opensea = OPENSEA[network] + contract + "/" + tokenId
     rarible = RARIBLE[network] + contract + ":" + tokenId
