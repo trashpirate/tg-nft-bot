@@ -97,7 +97,7 @@ RESERVOIR_URL = {
     "polygon-mainnet": "https://api-polygon.reservoir.tools/",
 }
 
-gateways = ["gateway.pinata.cloudm", "dweb.link", "ipfs.io", "w3s.link"]
+gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
 
 
 def downloadImage(url):
@@ -226,8 +226,6 @@ def getImageUrl(ipfsLink: str):
 
 
 def getIPFSData(ipfsLink: str):
-
-    gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
 
     for gateway in gateways:
         suburl = ipfsLink.replace("://", "/")
