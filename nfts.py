@@ -182,15 +182,6 @@ def getCollectionInfo(network, contract):
 
 
 def getTotalSupply(network, contract):
-    # url = "https://api.opensea.io/api/v2/collections/" + slug
-
-    # headers = {
-    #     "accept": "application/json",
-    #     "x-api-key": OPENSEA_API_KEY,
-    # }
-    # response = requests.get(url, headers=headers)
-    # data_json = response.json()
-    # return data_json["total_supply"]
     w3 = Web3(Web3.HTTPProvider(RPC[network]))
 
     with open("./assets/NFT.json", "r") as f:
