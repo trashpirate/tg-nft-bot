@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from http import HTTPStatus
 import logging
-import os
 from typing import Optional
 import traceback
 
@@ -16,8 +15,6 @@ from telegram import (
     InlineKeyboardMarkup,
     LinkPreviewOptions,
     Update,
-    InlineQueryResultArticle,
-    InputTextMessageContent,
     ReplyKeyboardRemove,
 )
 from telegram.constants import ParseMode
@@ -35,7 +32,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     Application,
 )
-from web3 import HTTPProvider, Web3
+from web3 import Web3
 from models import (
     add_config,
     check_if_exists,
@@ -161,7 +158,7 @@ class WebhookData:
     value: float
 
 
-# Define a function to dynamically create a new webhook route
+# Function to dynamically create a new webhook route
 def create_webhook_route(route):
 
     if route not in [rule.rule for rule in flask_app.url_map.iter_rules()]:
