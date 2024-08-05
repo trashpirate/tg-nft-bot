@@ -1,7 +1,7 @@
 # TELEGRAM NFT BOT
 ![Version](https://img.shields.io/badge/version-1.1.0-blue.svg?style=for-the-badge)
 ![Python](https://img.shields.io/badge/python-v3.10.12-blue.svg?style=for-the-badge)
-[![License: MIT](https://img.shields.io/github/license/trashpirate/reflections-bot?style=for-the-badge)](https://github.com/trashpirate/reflections-bot/blob/master/LICENSE)
+[![GitHub License](https://img.shields.io/github/license/trashpirate/tg-nft-bot?style=for-the-badge)](https://github.com/trashpirate/tg-nft-bot/blob/master/LICENSE)
 
 [![Website: nadinaoates.com](https://img.shields.io/badge/Portfolio-00e0a7?style=for-the-badge&logo=Website)](https://nadinaoates.com)
 [![LinkedIn: nadinaoates](https://img.shields.io/badge/LinkedIn-0a66c2?style=for-the-badge&logo=LinkedIn&logoColor=f5f5f5)](https://linkedin.com/in/nadinaoates)
