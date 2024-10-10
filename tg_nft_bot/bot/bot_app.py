@@ -1,19 +1,12 @@
-from dataclasses import dataclass
-from http import HTTPStatus
 import logging
-from typing import Optional
 import traceback
 
-
-from flask import Response, request
-from werkzeug.routing import Rule
 from telegram import (
     BotCommand,
     BotCommandScopeAllChatAdministrators,
     ChatMember,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    LinkPreviewOptions,
     Update,
     ReplyKeyboardRemove,
 )
@@ -22,36 +15,38 @@ from telegram.ext import (
     filters,
     ConversationHandler,
     MessageHandler,
-    ApplicationBuilder,
     CommandHandler,
     ContextTypes,
     ChatMemberHandler,
     CallbackContext,
-    ExtBot,
     TypeHandler,
     CallbackQueryHandler,
-    Application,
 )
-from web3 import Web3
-from models import (
+from tg_nft_bot.bot.bot_utils import CustomContext, WebhookUpdate, create_webhook_route
+from tg_nft_bot.db.db_operations import (
     add_config,
     check_if_exists,
     delete_config_by_id,
     query_chats_by_contract,
     query_collection_by_chat,
     query_collection_by_id,
-    query_collection_by_webhook,
     query_table,
     update_chats_by_id,
     update_config,
 )
-from credentials import TEST, TOKEN, URL
-from graphql import create_test_webhook, create_webhook, delete_webhook
-from nfts import getCollectionInfo, getMetadata, getSaleInfo, OPENSEA_NETWORK
-from app import flask_app
 
 # helpers
-from helpers import NETWORK_SYMBOLS, RPC
+from tg_nft_bot.utils.networks import NETWORK_SYMBOLS
+from tg_nft_bot.utils.credentials import TEST, TOKEN, URL
+from tg_nft_bot.webhooks.webhook_operations import (
+    create_test_webhook,
+    create_webhook,
+    delete_webhook,
+)
+from tg_nft_bot.nft.nft_operations import getCollectionInfo
+from tg_nft_bot.nft.nft_constants import OPENSEA_NETWORK
+
+from tg_nft_bot.bot.bot_utils import application, webhook_update
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -62,208 +57,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-# context
-class ChatData:
-    """Custom class for chat_data. Here we store data per message."""
-
-    def __init__(self) -> None:
-        self.webhook: str = None
-        self.name: str = None
-        self.network: str = None
-        self.contract: str = None
-        self.website: str = None
-        self.chat: int = None
-        self.menu: int = None
-
-
-class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
-
-    def __init__(
-        self,
-        application: Application,
-        chat_id: Optional[int] = None,
-        user_id: Optional[int] = None,
-    ):
-        super().__init__(application=application, chat_id=chat_id, user_id=user_id)
-        self._message_id: Optional[int] = None
-
-    @property
-    def webhook(self) -> Optional[str]:
-        return self.chat_data.webhook
-
-    @property
-    def network(self) -> Optional[str]:
-        return self.chat_data.network
-
-    @property
-    def contract(self) -> Optional[str]:
-        return self.chat_data.contract
-
-    @property
-    def website(self) -> Optional[str]:
-        return self.chat_data.website
-
-    @property
-    def chat(self) -> Optional[int]:
-        return self.chat_data.chat
-
-    @property
-    def menu(self) -> Optional[int]:
-        return self.chat_data.menu
-
-    @webhook.setter
-    def webhook(self, value: str) -> None:
-        self.chat_data.webhook = value
-
-    @network.setter
-    def network(self, value: str) -> None:
-        self.chat_data.network = value
-
-    @contract.setter
-    def contract(self, value: str) -> None:
-        self.chat_data.contract = value
-
-    @website.setter
-    def website(self, value: str) -> None:
-        self.chat_data.website = value
-
-    @chat.setter
-    def chat(self, value: int) -> None:
-        self.chat_data.chat = value
-
-    @menu.setter
-    def menu(self, value: int) -> None:
-        self.chat_data.menu = value
-
-
-#################################################################
-#######################     WEBHOOK     #########################
-#################################################################
-
-
-# dataclasses
-@dataclass
-class WebhookUpdate:
-    data: str
-
-
-class WebhookData:
-    webhookId: str
-    contract: str
-    tokenId: object
-    fromAddress: str
-    toAddress: str
-    hash: str
-    type: str
-    value: float
-
-
-# Function to dynamically create a new webhook route
-def create_webhook_route(route):
-
-    if route not in [rule.rule for rule in flask_app.url_map.iter_rules()]:
-
-        flask_app.url_map.add(Rule(route, endpoint=route))
-
-        # @flask_app.route(route, methods=["GET", "POST"])
-        async def nft_updates() -> Response:
-            json_data = request.json
-            await update_webhook_queue(json_data)
-            return Response(status=HTTPStatus.OK)
-
-        flask_app.view_functions[route] = nft_updates
-        print("Webhook route created: " + route)
-
-
-# functions
-def parse_tx(json_data):
-
-    try:
-        receipts = json_data["data"][0]["receipts"]
-    except KeyError:
-        try:
-            receipts = json_data["data"]["receipts"]
-        except Exception:
-            traceback.print_exc()
-            return None
-
-    if len(receipts) < 1:
-        # print("No new data.")
-        return None
-
-    # webhook id
-    try:
-        webhookId = json_data["metadata"]["stream_id"]
-        network = json_data["metadata"]["network"]
-
-        data = []
-        for receipt in receipts:
-            for log in receipt["logs"]:
-
-                topics = log["topics"]
-                if (
-                    len(topics) == 4
-                    and topics[0]
-                    == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-                ):
-                    print(log)
-                    # contract address
-                    contract = Web3.to_checksum_address(log["address"])
-                    # from address
-                    fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
-                    # owner address
-                    toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
-                    # tokenId
-                    tokenId = int(topics[3], 16)
-                    # transaction hash
-                    hash = log["transactionHash"]
-
-                    # check if mint or purchase
-                    if fromAddress != "0x0000000000000000000000000000000000000000":
-
-                        info = getSaleInfo(network, contract, tokenId)
-                        if info is None:
-                            return None
-                    else:
-                        info = {
-                            "type": "mint",
-                            "price": "N/A",
-                            "price_usd": "N/A",
-                            "currency": "N/A",
-                            "marketplace": "N/A",
-                        }
-
-                    data.append(
-                        dict(
-                            webhookId=webhookId,
-                            tokenId=tokenId,
-                            contract=contract,
-                            fromAddress=fromAddress,
-                            toAddress=toAddress,
-                            hash=hash,
-                            info=info,
-                        )
-                    )
-        return data
-    except Exception:
-        traceback.print_exc()
-        return None
-
-
 #################################################################
 #######################     BOT      ############################
 #################################################################
-
-# create bot
-context_types = ContextTypes(context=CustomContext, chat_data=ChatData)
-application = (
-    ApplicationBuilder()
-    .token(TOKEN)
-    .updater(None)
-    .context_types(context_types)
-    .concurrent_updates(True)
-    .build()
-)
 
 # standard messages
 cancel_message = "Use /start in group chat to restart the bot."
@@ -312,8 +108,8 @@ def network_menu():
             InlineKeyboardButton("BNB", callback_data="bnbchain-mainnet"),
         ],
         [
+            InlineKeyboardButton("TRON", callback_data="avalanche-mainnet"),
             InlineKeyboardButton("ARB", callback_data="arbitrum-mainnet"),
-            InlineKeyboardButton("AVAX", callback_data="avalanche-mainnet"),
             InlineKeyboardButton("MATIC", callback_data="polygon-mainnet"),
         ],
         [
@@ -353,53 +149,7 @@ def bot_removed(update: Update, context: CallbackContext) -> None:
                 update_chats_by_id(collection["id"], new_chats)
 
 
-async def webhook_update(
-    update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
-) -> None:
 
-    data_list = parse_tx(update.data)
-    if data_list is None or len(data_list) == 0:
-        return
-
-    for data in data_list:
-        collection = query_collection_by_webhook(data["webhookId"])
-        network = collection["network"]
-
-        [img, text] = getMetadata(
-            network,
-            data["contract"],
-            data["toAddress"],
-            data["tokenId"],
-            data["hash"],
-            data["info"],
-        )
-
-        chats: list[str] = collection["chats"]
-        for chat_id in chats:
-            try:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=text,
-                    link_preview_options=LinkPreviewOptions(
-                        url=img, show_above_text=True
-                    ),
-                    parse_mode="HTML",
-                )
-
-            except Exception as e:
-                print("Sending message failed:")
-                traceback.print_exc()
-                return
-
-
-async def update_queue(new_data):
-    await application.update_queue.put(
-        Update.de_json(data=new_data, bot=application.bot)
-    )
-
-
-async def update_webhook_queue(new_data):
-    await application.update_queue.put(WebhookUpdate(data=new_data))
 
 
 async def enter_website(update: Update, context: CustomContext):
@@ -443,6 +193,9 @@ async def enter_website(update: Update, context: CustomContext):
 
         try:
             [name, slug] = getCollectionInfo(context.network, context.contract)
+
+            if name == None:
+                raise Exception("Invalid contract address.")
 
             if website[:8] != "https://":
                 website = (
@@ -500,9 +253,11 @@ async def enter_website(update: Update, context: CustomContext):
                 )
 
                 status = "_Collection is updated._"
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
-            status = "_Configuration failed. Please start over and try again._"
+            status = (
+                "_Configuration failed: " + str(e) + "\nPlease start over and try again._"
+            )
 
         message_text = title_message
         message_text += (

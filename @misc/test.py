@@ -1,4 +1,4 @@
-from nfts import *
+from tg_nft_bot.nft.nft_operations import *
 
 nftContract = "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6"
 network = "base-mainnet"

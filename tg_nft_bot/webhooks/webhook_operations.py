@@ -1,9 +1,9 @@
 import requests
-from credentials import QUICKNODE_API_KEY, TEST, URL
 import base64
 from web3 import HTTPProvider, Web3
 
-from helpers import RPC
+from tg_nft_bot.utils.networks import RPC
+from tg_nft_bot.utils.credentials import QUICKNODE_API_KEY, TEST, URL
 
 
 def getQuickNodeFilter(contractAddress):
@@ -156,6 +156,7 @@ def create_webhook(network, contract, route):
 
         response = post_quicknode(payload, url)
         data_json = response.json()
+        print(data_json)
         return data_json["id"]
 
     else:
@@ -225,4 +226,5 @@ def create_test_webhook(network, contract, route):
 
     response = post_quicknode(payload, url)
     data_json = response.json()
-    return data_json["id"]
+    print(data_json)
+    return data_json

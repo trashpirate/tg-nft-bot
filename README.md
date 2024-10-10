@@ -100,7 +100,7 @@ ifconfig
 #### Start the bot:
 
 ```bash
-$ python main.py
+$ python -m tg_nft_bot.main
 ```
 #### Start ngrok: 
 ```bash

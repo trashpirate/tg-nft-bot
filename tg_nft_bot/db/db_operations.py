@@ -3,10 +3,10 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from web3 import Web3
 
-from credentials import TABLE
+from tg_nft_bot.utils.credentials import TABLE
 
 db = SQLAlchemy()
-from app import flask_app
+from tg_nft_bot.bot.bot_config import flask_app
 
 
 class CollectionConfigs(db.Model):
