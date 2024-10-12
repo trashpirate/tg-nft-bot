@@ -1,9 +1,9 @@
 from flask import Flask, request, Response
 import json
 
-test_webhook = Flask(__name__)
+dummy_webhook = Flask(__name__)
 
-@test_webhook.route('/test', methods=['POST'])
+@dummy_webhook.route('/test', methods=['POST'])
 
 def webhook():
     print('Received webhook. Request details:')
@@ -21,4 +21,4 @@ def webhook():
     return Response('Webhook received', status=200)
 
 if __name__ == '__main__':
-    test_webhook.run(port=8000)
+    dummy_webhook.run(port=8000)

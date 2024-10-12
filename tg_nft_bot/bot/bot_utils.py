@@ -30,7 +30,7 @@ from tg_nft_bot.db.db_operations import (
 from tg_nft_bot.utils.networks import SCANS
 from tg_nft_bot.utils.credentials import TOKEN
 
-from tg_nft_bot.nft.nft_operations import getImageUrl, getMetadata, getSaleInfo, getTotalSupply
+from tg_nft_bot.nft.nft_operations import get_image_url, get_log_data, get_metadata, get_total_supply
 from tg_nft_bot.nft.nft_constants import MAGIC_EDEN, OPENSEA, RARIBLE
 
 # app
@@ -151,15 +151,19 @@ def create_webhook_route(route):
 
 # functions
 def parse_tx(json_data):
-    
+
     try:
-        receipts = json_data["data"][0]["receipts"]
+        receipts = json_data["receipts"]
     except Exception:
         try:
             try:
                 receipts = json_data["data"]["receipts"]
             except Exception:
-                receipts = json_data["receipts"]
+                try:
+                    receipts = json_data["data"][0]["receipts"]
+                except Exception:
+                    raise Exception("No receipts found.")
+                
         except Exception:
             traceback.print_exc()
             return None
@@ -170,60 +174,13 @@ def parse_tx(json_data):
 
     # webhook id
     try:
-        webhook_id = json_data["metadata"]["stream_id"]
         network = json_data["metadata"]["network"]
-
-        logs_list:List[Dict[str, Any]] = [log for receipt in receipts for log in receipt["logs"]]
+        webhook_id = json_data["metadata"]["stream_id"]
+        logs_list = [log for receipt in receipts for log in receipt["logs"]]
         
-        data = []
-        for receipt in receipts:
-            for log in receipt["logs"]:
-
-                topics = log["topics"]
-                if (
-                    len(topics) == 4
-                    and topics[0]
-                    == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-                ):
-                    print(log)
-                    # contract address
-                    contract = Web3.to_checksum_address(log["address"])
-                    # from address
-                    fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
-                    # owner address
-                    toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
-                    # token_id
-                    token_id = int(topics[3], 16)
-                    # transaction hash
-                    hash = log["transactionHash"]
-
-                    # check if mint or purchase
-                    if fromAddress != "0x0000000000000000000000000000000000000000":
-
-                        info = getSaleInfo(network, contract, token_id, hash)
-                        if info is None:
-                            return None
-                    else:
-                        info = {
-                            "type": "mint",
-                            "price": "N/A",
-                            "price_usd": "N/A",
-                            "currency": "N/A",
-                            "marketplace": "N/A",
-                        }
-
-                    data.append(
-                        dict(
-                            webhook_id=webhook_id,
-                            token_id=token_id,
-                            contract=contract,
-                            fromAddress=fromAddress,
-                            toAddress=toAddress,
-                            hash=hash,
-                            info=info,
-                        )
-                    )
-        return data
+        logs = get_log_data(network, webhook_id, logs_list)
+        return logs
+    
     except Exception:
         traceback.print_exc()
         return None
@@ -240,7 +197,7 @@ async def webhook_update(
         collection = query_collection_by_webhook(data["webhook_id"])
         network = collection["network"]
 
-        [img, text] = generateOutput(
+        [img, text] = generate_output(
             network,
             data["contract"],
             data["toAddress"],
@@ -309,7 +266,7 @@ application = (
 #         print(e)
 #         raise
     
-def generateOutput(network, contract, owner, token_id, hash, info):
+def generate_output(network, contract, owner, token_id, hash, info):
 
     token_id = str(token_id)
     collection = query_collection(network, contract)
@@ -317,12 +274,12 @@ def generateOutput(network, contract, owner, token_id, hash, info):
     collection_name = collection["name"]
     website = collection["website"]
 
-    total_supply = getTotalSupply(network, contract)
+    total_supply = get_total_supply(network, contract)
 
-    nft_data = getMetadata(network, contract, token_id)
+    nft_data = get_metadata(network, contract, token_id)
 
     nft_name = nft_data["name"]
-    nft_image = getImageUrl(nft_data["image"])
+    nft_image = get_image_url(nft_data["image"])
 
     
     opensea = OPENSEA[network] + contract + "/" + token_id

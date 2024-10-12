@@ -130,7 +130,7 @@ def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
     return None
 
 
-def getCollectionInfo(network, contract):
+def get_collection_info(network, contract):
 
     name = None
 
@@ -172,9 +172,9 @@ def getCollectionInfo(network, contract):
         return [name, collection]
 
 
-def getTotalSupply(network, contract):
+def get_total_supply(network, contract):
 
-    totalSupply = None
+    total_supply = None
 
     try:
         if network == "tron-mainnet":
@@ -183,7 +183,7 @@ def getTotalSupply(network, contract):
                 contract_instance = client.get_contract(contract)
                 with open(abi_json, "r") as f:
                     contract_instance.abi = json.load(f)
-                    totalSupply = contract_instance.functions.totalSupply()
+                    total_supply = contract_instance.functions.totalSupply()
             except Exception as e:
                 print(f"TRON: {e}")
                 raise e
@@ -194,8 +194,8 @@ def getTotalSupply(network, contract):
                 with open(abi_json, "r") as f:
                     abi = json.load(f)
                     contract_instance = w3.eth.contract(address=contract, abi=abi)
-                    totalSupply = contract_instance.functions.totalSupply().call()
-                    return totalSupply
+                    total_supply = contract_instance.functions.totalSupply().call()
+                    return total_supply
 
             except Exception as e:
                 print(f"EVM: {e}")
@@ -205,10 +205,10 @@ def getTotalSupply(network, contract):
         print(f"Reading contract failed: {e}")
 
     finally:
-        return totalSupply
+        return total_supply
 
 
-def getImageUrl(imageLink: str):
+def get_image_url(imageLink: str):
 
     for gateway in gateways:
         if imageLink[:8] != "https://":
@@ -236,7 +236,7 @@ def getImageUrl(imageLink: str):
     return ""
 
 
-def getMetadataJson(metadataLink: str):
+def get_metadata_json(metadataLink: str):
 
     for gateway in gateways:
 
@@ -266,7 +266,7 @@ def getMetadataJson(metadataLink: str):
     return None
 
 
-def getMetadata(network: str, contract: str, token_id: str):
+def get_metadata(network: str, contract: str, token_id: str):
 
     metadata_url = None
     if network == "tron-mainnet":
@@ -295,7 +295,7 @@ def getMetadata(network: str, contract: str, token_id: str):
             print(f"Fetching metadata url failed (EVM): {e}")
 
     if metadata_url is not None:
-        data_json = getMetadataJson(metadata_url)
+        data_json = get_metadata_json(metadata_url)
     else:
         data_json = None
 

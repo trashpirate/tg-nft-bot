@@ -23,9 +23,9 @@ def test_getNftData():
     print(data)
 
 
-def test_getMetadata():
+def test_get_metadata():
 
-    [img, text] = getMetadata(
+    [img, text] = get_metadata(
         network,
         nftContract,
         toAddress,
@@ -40,4 +40,4 @@ def test_getMetadata():
 if __name__ == "__main__":
 
     test_getNftData()
-    # test_getMetadata()
+    # test_get_metadata()

@@ -42,7 +42,7 @@ from tg_nft_bot.streams.streams_operations import (
     create_stream,
     delete_stream,
 )
-from tg_nft_bot.nft.nft_operations import getCollectionInfo
+from tg_nft_bot.nft.nft_operations import get_collection_info
 from tg_nft_bot.nft.nft_constants import OPENSEA_NETWORK
 
 from tg_nft_bot.bot.bot_utils import application, webhook_update
@@ -191,7 +191,7 @@ async def enter_website(update: Update, context: CustomContext):
             return WEBSITE
 
         try:
-            [name, slug] = getCollectionInfo(context.network, context.contract)
+            [name, slug] = get_collection_info(context.network, context.contract)
 
             if name == None:
                 raise Exception("Invalid contract address.")
@@ -211,13 +211,12 @@ async def enter_website(update: Update, context: CustomContext):
                 webhook_id = create_stream(
                     network=context.network, contract=context.contract, route=route, status="paused"
                 )
-
-            entry = check_if_exists(context.network, context.contract)
-            
-            webhook_id = create_stream(
+            else:
+                webhook_id = create_stream(
                 network=context.network, contract=context.contract, route=route
             )
-
+                
+            entry = check_if_exists(context.network, context.contract)
             if entry is None:
                 # TODO:
                 # check if contract exists
