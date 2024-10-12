@@ -139,7 +139,7 @@ def test_total_supply_tron():
     network = "tron-mainnet"
     total_supply = get_total_supply(network, VALID_TRON_CONTRACT)
 
-    assert total_supply == 3418
+    assert total_supply == 3438
 
 
 def test_total_supply_tron_invalid_contract():

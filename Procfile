@@ -1,1 +1,1 @@
-web: python3 main.py $PORT
+web: python3 tg_nft_bot.main $PORT

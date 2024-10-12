@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tg_nft_bot"
 version = "0.1.0"
-description = "NFT Notificiatino Bot"
+description = "NFT Notification Bot"
 authors = ["Nadina Oates <nadinaoates@gmail.com>"]
 
 [tool.poetry.dependencies]
