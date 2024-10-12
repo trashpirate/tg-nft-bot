@@ -1,9 +1,13 @@
 import json
 import traceback
+from types import NoneType
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 from web3 import Web3
 from tronpy import Tron
+from tronpy.abi import trx_abi
 from tronpy.providers import HTTPProvider
 
+import os
 import requests
 from PIL import Image
 from io import BytesIO
@@ -11,77 +15,119 @@ import tempfile
 from urllib.request import urlopen
 
 from tg_nft_bot.utils.credentials import (
-    OPENSEA_API_KEY,
     RESERVOIR_API_KEY,
     TRONGRID_API_KEY,
 )
 from tg_nft_bot.nft.nft_constants import (
-    MAGIC_EDEN,
-    OPENSEA,
-    OPENSEA_API,
-    RARIBLE,
     RESERVOIR_URL,
 )
 from tg_nft_bot.utils.networks import RPC
-from tg_nft_bot.db.db_operations import (
-    query_collection,
-)
-import os
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 abi_json = os.path.join(current_dir, "..", "..", "assets", "NFT.json")
 
 gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
 
+class SaleData(TypedDict):
+    type: str
+    price: str  # Assuming price can be int or float
+    price_usd: str
+    currency: str
+    marketplace: str
+    
+class LogData(TypedDict):
+    network: str
+    webhookId: str
+    token_id: int
+    contract: str
+    owner: str
+    hash: str
+    info: SaleData
+    
+def is_transfer(topics: List[str]) -> bool:
+    return len(topics) == 4 and topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
-def downloadImage(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+def is_mint(addr_from: str) -> bool:
+    return addr_from == "0x0000000000000000000000000000000000000000"
 
-        image = Image.open(BytesIO(response.content))
-        file_extension = image.format.lower()  # e.g., 'jpeg' or 'png'
-        if file_extension == "jpeg":
-            file_extension = "jpg"
+def get_log_data(network:str, webhook_id:str, logs: List[Dict[str, Any]]) -> Union[List[LogData], NoneType]:
+    
+    data: List[LogData] = []
+    for log in logs:
 
-        # Create a temporary file to save the image
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=f".{file_extension}"
-        ) as tmp_file:
-            image.save(tmp_file, format=image.format)
-            temp_file_path = tmp_file.name
-        return temp_file_path
+        if is_transfer(log["topics"]):
 
-    except Exception as e:
-        print(e)
-        raise
+            # check if mint or purchase
+            info = get_sale_info(network, log)
+            if info is None:
+                return None
 
+            data.append(
+                LogData(
+                    network=network,
+                    webhookId=webhook_id,
+                    token_id=int(log["topics"][3], 16),
+                    contract=Web3.to_checksum_address(log["address"]),
+                    owner=Web3.to_checksum_address("0x" + log["topics"][2][-40:]),
+                    hash=log["transactionHash"],
+                    info=info,
+                )
+            )
+    
+    return data
 
-def getSaleInfo(network, contract, tokenId):
-
-    url = f"{RESERVOIR_URL[network]}tokens/{contract}%3A{tokenId}/activity/v5?limit=1&sortBy=eventTimestamp&types=sale"
-    headers = {"accept": "*/*", "x-api-key": RESERVOIR_API_KEY}
-
-    response = requests.get(url, headers=headers)
-    data_json = response.json()
-
-    events = data_json["activities"]
-    if len(events) > 0:
-        price_native = events[0]["price"]["amount"]["decimal"]
-        price_usd = events[0]["price"]["amount"]["usd"]
-        currency = events[0]["price"]["currency"]["symbol"]
-        marketplace = events[0]["fillSource"]["name"]
-
+def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
+    
+    addr_from = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
+    if is_mint(addr_from):
         return {
-            "type": events[0]["type"],
-            "price": price_native,
-            "price_usd": price_usd,
-            "currency": currency,
-            "marketplace": marketplace,
-        }
-
+            "type": "mint",
+            "price": "N/A",
+            "price_usd": "N/A",
+            "currency": "N/A",
+            "marketplace": "N/A",
+        }            
+    elif network == "tron-mainnet":
+        w3 = Web3(Web3.HTTPProvider(RPC[network]))
+        tx = w3.eth.get_transaction_receipt(log["transactionHash"])
+        for log in tx["logs"]:
+            hex_str = log["data"].hex()
+            if len(hex_str) == 192:
+                price = float(int(hex_str[128:], 16)) / 1e6
+            
+                return {
+                    "type": "sale",
+                    "price": "%.2f" % price,
+                    "price_usd": "N/A",
+                    "currency": "TRX",
+                    "marketplace": "ApeNFT.io",
+                }
     else:
-        return None
+        contract = Web3.to_checksum_address(log["address"])
+        token_id = int(log["topics"][3], 16)
+        url = f"{RESERVOIR_URL[network]}tokens/{contract}%3A{token_id}/activity/v5?limit=1&sortBy=eventTimestamp&types=sale"
+        headers = {"accept": "*/*", "x-api-key": RESERVOIR_API_KEY}
+
+        response = requests.get(url, headers=headers)
+        data_json = response.json()
+
+        events = data_json["activities"]
+        if len(events) > 0:
+            price_native = events[0]["price"]["amount"]["decimal"]
+            price_usd = events[0]["price"]["amount"]["usd"]
+            currency = events[0]["price"]["currency"]["symbol"]
+            marketplace = events[0]["fillSource"]["name"]
+
+            return {
+                "type": events[0]["type"],
+                "price": price_native,
+                "price_usd": price_usd,
+                "currency": currency,
+                "marketplace": marketplace,
+            }     
+                
+    return None
 
 
 def getCollectionInfo(network, contract):
@@ -190,7 +236,7 @@ def getImageUrl(imageLink: str):
     return ""
 
 
-def getIPFSData(metadataLink: str):
+def getMetadataJson(metadataLink: str):
 
     for gateway in gateways:
 
@@ -220,7 +266,7 @@ def getIPFSData(metadataLink: str):
     return None
 
 
-def getNftData(network: str, contract: str, tokenId: str):
+def getMetadata(network: str, contract: str, token_id: str):
 
     metadata_url = None
     if network == "tron-mainnet":
@@ -231,7 +277,7 @@ def getNftData(network: str, contract: str, tokenId: str):
             with open(abi_json, "r") as f:
                 contract_instance.abi = json.load(f)
 
-                metadata_url = contract_instance.functions.tokenURI(int(tokenId))
+                metadata_url = contract_instance.functions.tokenURI(int(token_id))
                 print(metadata_url)
         except Exception as e:
             print(f"Fetching metadata url failed (TRON): {e}")
@@ -243,13 +289,13 @@ def getNftData(network: str, contract: str, tokenId: str):
                 abi = json.load(f)
                 contract_instance = w3.eth.contract(address=contract, abi=abi)
                 metadata_url = contract_instance.functions.tokenURI(
-                    Web3.to_int(int(tokenId))
+                    Web3.to_int(int(token_id))
                 ).call()
         except Exception as e:
             print(f"Fetching metadata url failed (EVM): {e}")
 
     if metadata_url is not None:
-        data_json = getIPFSData(metadata_url)
+        data_json = getMetadataJson(metadata_url)
     else:
         data_json = None
 

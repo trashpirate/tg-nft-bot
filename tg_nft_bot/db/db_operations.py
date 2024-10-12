@@ -67,9 +67,9 @@ def query_collection(network, contract):
     return collection_dict
 
 
-def query_collection_by_webhook(webhookId):
+def query_collection_by_webhook(webhook_id):
     with flask_app.app_context():
-        collection = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+        collection = CollectionConfigs.query.filter_by(webhookId=webhook_id).first()
         collection_dict = {
             "id": collection.id,
             "name": collection.name,
@@ -121,9 +121,9 @@ def query_collection_by_id(cid):
     return collection_dict
 
 
-def query_network_by_webhook(webhookId):
+def query_network_by_webhook(webhook_id):
     with flask_app.app_context():
-        entry = CollectionConfigs.query.filter_by(webhookId=webhookId).first()
+        entry = CollectionConfigs.query.filter_by(webhookId=webhook_id).first()
 
     if entry is None:
         return None
@@ -204,7 +204,7 @@ def initial_config():
             db.session.commit()
 
 
-def add_config(name, slug, network, contract, website, webhookId, chats):
+def add_config(name, slug, network, contract, website, webhook_id, chats):
 
     with flask_app.app_context():
         config = CollectionConfigs(
@@ -213,14 +213,14 @@ def add_config(name, slug, network, contract, website, webhookId, chats):
             network=network,
             contract=Web3.to_checksum_address(contract),
             website=website,
-            webhookId=webhookId,
+            webhookId=webhook_id,
             chats=chats,
         )
         db.session.add(config)
         db.session.commit()
 
 
-def update_config(name, slug, network, contract, website, webhookId, chats):
+def update_config(name, slug, network, contract, website, webhook_id, chats):
 
     with flask_app.app_context():
 
@@ -232,7 +232,7 @@ def update_config(name, slug, network, contract, website, webhookId, chats):
         row_to_update.network = network
         row_to_update.contract = Web3.to_checksum_address(contract)
         row_to_update.website = website
-        row_to_update.webhookId = webhookId
+        row_to_update.webhookId = webhook_id
         row_to_update.chats = chats
         db.session.commit()
 

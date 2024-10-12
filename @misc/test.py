@@ -2,7 +2,7 @@ from tg_nft_bot.nft.nft_operations import *
 
 nftContract = "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6"
 network = "base-mainnet"
-tokenId = "569"
+token_id = "569"
 
 fromAddress = "0xA4afbA149200B08E917A368C9cc9eD77d0c279a1"
 toAddress = "0xA4afbA149200B08E917A368C9cc9eD77d0c279a1"
@@ -19,7 +19,7 @@ info = {
 
 def test_getNftData():
 
-    data = getNftData(network, nftContract, tokenId)
+    data = getNftData(network, nftContract, token_id)
     print(data)
 
 
@@ -29,7 +29,7 @@ def test_getMetadata():
         network,
         nftContract,
         toAddress,
-        tokenId,
+        token_id,
         hash,
         info,
     )

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Dict, List, Optional
 import traceback
 
 from flask import Response, request
@@ -30,7 +30,7 @@ from tg_nft_bot.db.db_operations import (
 from tg_nft_bot.utils.networks import SCANS
 from tg_nft_bot.utils.credentials import TOKEN
 
-from tg_nft_bot.nft.nft_operations import getImageUrl, getNftData, getSaleInfo, getTotalSupply
+from tg_nft_bot.nft.nft_operations import getImageUrl, getMetadata, getSaleInfo, getTotalSupply
 from tg_nft_bot.nft.nft_constants import MAGIC_EDEN, OPENSEA, RARIBLE
 
 # app
@@ -122,9 +122,9 @@ class WebhookUpdate:
 
 
 class WebhookData:
-    webhookId: str
+    webhook_id: str
     contract: str
-    tokenId: object
+    token_id: object
     fromAddress: str
     toAddress: str
     hash: str
@@ -151,12 +151,15 @@ def create_webhook_route(route):
 
 # functions
 def parse_tx(json_data):
-
+    
     try:
         receipts = json_data["data"][0]["receipts"]
-    except KeyError:
+    except Exception:
         try:
-            receipts = json_data["data"]["receipts"]
+            try:
+                receipts = json_data["data"]["receipts"]
+            except Exception:
+                receipts = json_data["receipts"]
         except Exception:
             traceback.print_exc()
             return None
@@ -167,9 +170,11 @@ def parse_tx(json_data):
 
     # webhook id
     try:
-        webhookId = json_data["metadata"]["stream_id"]
+        webhook_id = json_data["metadata"]["stream_id"]
         network = json_data["metadata"]["network"]
 
+        logs_list:List[Dict[str, Any]] = [log for receipt in receipts for log in receipt["logs"]]
+        
         data = []
         for receipt in receipts:
             for log in receipt["logs"]:
@@ -187,15 +192,15 @@ def parse_tx(json_data):
                     fromAddress = Web3.to_checksum_address("0x" + topics[1][-40:])
                     # owner address
                     toAddress = Web3.to_checksum_address("0x" + topics[2][-40:])
-                    # tokenId
-                    tokenId = int(topics[3], 16)
+                    # token_id
+                    token_id = int(topics[3], 16)
                     # transaction hash
                     hash = log["transactionHash"]
 
                     # check if mint or purchase
                     if fromAddress != "0x0000000000000000000000000000000000000000":
 
-                        info = getSaleInfo(network, contract, tokenId)
+                        info = getSaleInfo(network, contract, token_id, hash)
                         if info is None:
                             return None
                     else:
@@ -209,8 +214,8 @@ def parse_tx(json_data):
 
                     data.append(
                         dict(
-                            webhookId=webhookId,
-                            tokenId=tokenId,
+                            webhook_id=webhook_id,
+                            token_id=token_id,
                             contract=contract,
                             fromAddress=fromAddress,
                             toAddress=toAddress,
@@ -232,14 +237,14 @@ async def webhook_update(
         return
 
     for data in data_list:
-        collection = query_collection_by_webhook(data["webhookId"])
+        collection = query_collection_by_webhook(data["webhook_id"])
         network = collection["network"]
 
         [img, text] = generateOutput(
             network,
             data["contract"],
             data["toAddress"],
-            data["tokenId"],
+            data["token_id"],
             data["hash"],
             data["info"],
         )
@@ -282,9 +287,31 @@ application = (
     .build()
 )
 
-def generateOutput(network, contract, owner, tokenId, hash, info):
+# def downloadImage(url):
+#     try:
+#         response = requests.get(url)
+#         response.raise_for_status()
 
-    tokenId = str(tokenId)
+#         image = Image.open(BytesIO(response.content))
+#         file_extension = image.format.lower()  # e.g., 'jpeg' or 'png'
+#         if file_extension == "jpeg":
+#             file_extension = "jpg"
+
+#         # Create a temporary file to save the image
+#         with tempfile.NamedTemporaryFile(
+#             delete=False, suffix=f".{file_extension}"
+#         ) as tmp_file:
+#             image.save(tmp_file, format=image.format)
+#             temp_file_path = tmp_file.name
+#         return temp_file_path
+
+#     except Exception as e:
+#         print(e)
+#         raise
+    
+def generateOutput(network, contract, owner, token_id, hash, info):
+
+    token_id = str(token_id)
     collection = query_collection(network, contract)
 
     collection_name = collection["name"]
@@ -292,14 +319,17 @@ def generateOutput(network, contract, owner, tokenId, hash, info):
 
     total_supply = getTotalSupply(network, contract)
 
-    nft_data = getNftData(network, contract, tokenId)
+    nft_data = getMetadata(network, contract, token_id)
 
     nft_name = nft_data["name"]
     nft_image = getImageUrl(nft_data["image"])
 
-    opensea = OPENSEA[network] + contract + "/" + tokenId
-    rarible = RARIBLE[network] + contract + ":" + tokenId
-    magicEden = MAGIC_EDEN[network] + contract + "/" + tokenId
+    
+    opensea = OPENSEA[network] + contract + "/" + token_id
+    rarible = RARIBLE[network] + contract + ":" + token_id
+    magicEden = MAGIC_EDEN[network] + contract + "/" + token_id
+    apenft = "https://apenft.io/#/asset/" + + contract + "/" + token_id
+    
     scan = SCANS[network]
 
     # message = '<a href="' + nft_image + '">&#8205;</a>'
@@ -318,7 +348,7 @@ def generateOutput(network, contract, owner, tokenId, hash, info):
         message += f"Marketplace: {marketplace.upper()}\n"
 
     message += f"\n<u><b>{nft_name}</b></u>\n"
-    message += f"Token ID: {tokenId}\n"
+    message += f"Token ID: {token_id}\n"
 
     message += '<a href="' + scan + "address/" + owner + '">Owner</a> | '
     message += '<a href="' + scan + "tx/" + hash + '">TX Hash</a> | '

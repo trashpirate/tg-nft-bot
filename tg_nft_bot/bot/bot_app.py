@@ -38,10 +38,9 @@ from tg_nft_bot.db.db_operations import (
 # helpers
 from tg_nft_bot.utils.networks import NETWORK_SYMBOLS
 from tg_nft_bot.utils.credentials import TEST, TOKEN, URL
-from tg_nft_bot.webhooks.webhook_operations import (
-    create_test_webhook,
-    create_webhook,
-    delete_webhook,
+from tg_nft_bot.streams.streams_operations import (
+    create_stream,
+    delete_stream,
 )
 from tg_nft_bot.nft.nft_operations import getCollectionInfo
 from tg_nft_bot.nft.nft_constants import OPENSEA_NETWORK
@@ -139,7 +138,7 @@ def bot_removed(update: Update, context: CallbackContext) -> None:
             ):
                 # delete webhook
                 # delete db entry
-                delete_webhook(collection["webhookId"])
+                delete_stream(collection["webhookId"])
                 delete_config_by_id(collection["id"])
             else:
                 for chat in collection["chats"]:
@@ -209,12 +208,13 @@ async def enter_website(update: Update, context: CustomContext):
             create_webhook_route(route)
 
             if TEST == "true":
-                webhookId = create_test_webhook(
-                    network=context.network, contract=context.contract, route=route
+                webhook_id = create_stream(
+                    network=context.network, contract=context.contract, route=route, status="paused"
                 )
 
             entry = check_if_exists(context.network, context.contract)
-            webhookId = create_webhook(
+            
+            webhook_id = create_stream(
                 network=context.network, contract=context.contract, route=route
             )
 
@@ -228,7 +228,7 @@ async def enter_website(update: Update, context: CustomContext):
                     context.network,
                     context.contract,
                     website,
-                    webhookId,
+                    webhook_id,
                     [context.chat],
                 )
                 status = "_Collection is added._"
@@ -248,7 +248,7 @@ async def enter_website(update: Update, context: CustomContext):
                     context.network,
                     context.contract,
                     website,
-                    webhookId,
+                    webhook_id,
                     chats,
                 )
 
@@ -440,11 +440,6 @@ async def select_action(update: Update, context: CustomContext):
                     if len(chats_isAdmin) == 0:
                         raise Exception("User is not admin of any configurations.")
 
-                    if len(r["website"]) > 8:
-                        website = r["website"]
-                    else:
-                        website = "https://opensea.io/collection/" + r["slug"]
-
                     message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
                     for chat in chats_isAdmin:
@@ -563,7 +558,7 @@ async def add_collection(update: Update, context: CustomContext):
 
         if len(collection["chats"]) == 1 and collection["chats"][0] == context.chat:
             name = collection["name"]
-            delete_webhook(collection["webhookId"])
+            delete_stream(collection["webhookId"])
             delete_config_by_id(collection["id"])
 
             status = f"<i>{name} collection removed from group chat.</i>"
@@ -582,7 +577,7 @@ async def add_collection(update: Update, context: CustomContext):
         row_buttons = []
         config_buttons = []
         rows: list[dict] = query_table()
-        print(rows)
+       
         for r in rows:
             cid = r["id"]
             name = r["name"]
@@ -602,13 +597,18 @@ async def add_collection(update: Update, context: CustomContext):
             if len(chats_isAdmin) == 0:
                 raise Exception("User is not admin of any configurations.")
 
+            # configure website
             if len(r["website"]) > 8:
                 website = r["website"]
+            elif network == "tron-mainnet":
+                website = "https://apenft.io/#/collection/" + contract
             else:
-                website = "https://opensea.io/collection/" + r["slug"]
+                website = "https://opensea.io/assets/" + OPENSEA_NETWORK[network] + "/" + contract
 
+            # output message
             message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
+            # send message to bot
             for chat in chats_isAdmin:
                 group_chat = await context.bot.get_chat(chat)
                 if group_chat.title is None:
