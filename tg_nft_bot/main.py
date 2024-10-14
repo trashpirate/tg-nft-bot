@@ -17,7 +17,7 @@ from tg_nft_bot.bot.bot_config import flask_app
 
 async def main() -> None:
 
-    initial_config()
+    initial_config(flask_app)
 
     # get all the configured chats and create the webhook routes on restart
     collection_list = query_table()

@@ -216,6 +216,7 @@ async def enter_website(update: Update, context: CustomContext):
                 network=context.network, contract=hex_address, route=route
             )
 
+            print("Hex address: " , hex_address)
             entry = check_if_exists(context.network, hex_address)
             if entry is None:
                 # TODO:

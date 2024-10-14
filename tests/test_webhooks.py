@@ -1,10 +1,6 @@
-import base64
-import json
 import pytest
 import requests
-from web3 import Web3
 
-from tests.test_utils import get_test_filter
 from tg_nft_bot.streams.streams_operations import (
     activate_stream,
     check_if_stream_exists,
@@ -14,12 +10,10 @@ from tg_nft_bot.streams.streams_operations import (
     get_filter,
     get_stream_by_id,
     pause_stream,
-    qn_headers,
 )
 
 from tg_nft_bot.utils.addresses import get_hex_address
 from tg_nft_bot.utils.credentials import QUICKNODE_API_KEY
-from tg_nft_bot.streams.streams_utils import encode_base64, get_qn_filter_code
 
 TEST_NETWORK = "tron-mainnet"
 TEST_CONTRACT = "TDuEK3tqCn9YPFNAFd7SDypdqDisNXm1xr"

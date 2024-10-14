@@ -1,10 +1,17 @@
 from flask import Flask, request, Response
 import json
 
-dummy_webhook = Flask(__name__)
+from flask_sqlalchemy import SQLAlchemy
 
+from tg_nft_bot.db.db_operations import initial_config
+from tg_nft_bot.utils.credentials import DATABASE_URL
 
-@dummy_webhook.route("/test", methods=["POST"])
+dummy_app = Flask(__name__)
+dummy_app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+dummy_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+            
+            
+@dummy_app.route("/test", methods=["POST"])
 def webhook():
     print("Received webhook. Request details:")
     print("Headers:", json.dumps(dict(request.headers), indent=2))
@@ -22,4 +29,6 @@ def webhook():
 
 
 if __name__ == "__main__":
-    dummy_webhook.run(port=8000)
+    
+    initial_config(dummy_app)
+    dummy_app.run(port=8000)
