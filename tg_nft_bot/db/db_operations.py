@@ -186,7 +186,7 @@ def check_if_exists(network, contract):
         entry = CollectionConfigs.query.filter_by(
             contract=contract, network=network
         ).first()
-
+    print("Entry: ", entry)
     if entry is None:
         return None
     else:
