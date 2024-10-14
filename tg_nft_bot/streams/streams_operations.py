@@ -101,7 +101,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
                 stream["name"] == stream_name
                 and stream["destination_attributes"]["url"] == stream_url
             ):
-                if config.env != 'production':
+                if config.env == 'local':
                     delete_stream(stream["id"])
                 else:
                     stream_id = stream["id"]
