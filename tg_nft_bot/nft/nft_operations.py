@@ -27,7 +27,10 @@ from tg_nft_bot.utils.networks import RPC
 current_dir = os.path.dirname(os.path.abspath(__file__))
 abi_json = os.path.join(current_dir, "..", "..", "assets", "NFT.json")
 
-gateways = ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"]
+gateways = {
+    "ipfs": ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"],
+    "btfs": ["gateway.btfs.io"]
+    }
 
 class SaleData(TypedDict):
     type: str
@@ -38,13 +41,57 @@ class SaleData(TypedDict):
     
 class LogData(TypedDict):
     network: str
-    webhookId: str
+    webhook_id: str
     token_id: int
     contract: str
     owner: str
     hash: str
     info: SaleData
     
+def is_valid_url(url: str, is_image = False) -> bool:
+        
+    try:
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            
+            if is_image:
+                image = Image.open(BytesIO(response.content))
+                image.verify()
+
+            return True
+        else:
+            return False
+            
+    except Exception:
+        return False
+
+def get_url(link: str, is_image = False) -> str:
+    
+    if link[:8] == "https://":
+        url = link
+        if is_valid_url(url, is_image):
+            return url
+        else:
+            url = link[:4] + link[5:]
+            if is_valid_url(url, is_image):
+                return url
+    else:
+        url_parts = link.split("://")
+        protocol = url_parts[0]
+        suburl = url_parts[1]
+        for gateway in gateways[protocol]:
+            url = "https://" + gateway + "/" + protocol + "/" + suburl
+            if is_valid_url(url, is_image):
+                return url
+            else:
+                url = url[:4] + url[5:]
+                if is_valid_url(url, is_image):
+                    return url  
+
+    return ""
+
+                
 def is_transfer(topics: List[str]) -> bool:
     return len(topics) == 4 and topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
@@ -66,7 +113,7 @@ def get_log_data(network:str, webhook_id:str, logs: List[Dict[str, Any]]) -> Uni
             data.append(
                 LogData(
                     network=network,
-                    webhookId=webhook_id,
+                    webhook_id=webhook_id,
                     token_id=int(log["topics"][3], 16),
                     contract=Web3.to_checksum_address(log["address"]),
                     owner=Web3.to_checksum_address("0x" + log["topics"][2][-40:]),
@@ -207,61 +254,25 @@ def get_total_supply(network, contract):
     finally:
         return total_supply
 
-
-def get_image_url(imageLink: str):
-
-    for gateway in gateways:
-        if imageLink[:8] != "https://":
-            suburl = imageLink.replace("://", "/")
-            url = "https://" + gateway + "/" + suburl
-        else:
-            url = imageLink
-
-        try:
-            # Send a GET request to the URL
-            response = requests.get(url)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                # Try to open the image
-                image = Image.open(BytesIO(response.content))
-                # Try to load the image to ensure it is valid
-                image.verify()
-                return url
-            else:
-                print(f"Error: Received status code {response.status_code}")
-        except Exception as e:
-            print(f"image request failed: {e}")
-
-    return ""
-
-
 def get_metadata_json(metadataLink: str):
 
-    for gateway in gateways:
+    url = get_url(metadataLink)
+    try:
+        # Send a GET request to the URL
+        response = requests.get(url)
 
-        if metadataLink[:8] != "https://":
-            suburl = metadataLink.replace("://", "/")
-            url = "https://" + gateway + "/" + suburl
+        # Check if the request was successful
+        if response.status_code == 200:
+            try:
+                # Try to parse the response content as JSON
+                json_data = response.json()
+                return json_data
+            except Exception as e:
+                print(f"Invalid JSON: {e}")
         else:
-            url = metadataLink
-
-        try:
-            # Send a GET request to the URL
-            response = requests.get(url)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                try:
-                    # Try to parse the response content as JSON
-                    json_data = response.json()
-                    return json_data
-                except Exception as e:
-                    print(f"Invalid JSON: {e}")
-            else:
-                print(f"Error: Received status code {response.status_code}")
-        except Exception as e:
-            print(f"Request metadata failed: {e}")
+            print(f"Error: Received status code {response.status_code}")
+    except Exception as e:
+        print(f"Request metadata failed: {e}")
 
     return None
 
@@ -272,13 +283,11 @@ def get_metadata(network: str, contract: str, token_id: str):
     if network == "tron-mainnet":
         try:
             client = Tron(HTTPProvider(api_key=TRONGRID_API_KEY))
-            contract_instance = client.get_contract(contract)
-            print("got contract")
+            base58_address = Tron.to_base58check_address(Tron.to_hex_address(contract))
+            contract_instance = client.get_contract(base58_address)
             with open(abi_json, "r") as f:
                 contract_instance.abi = json.load(f)
-
                 metadata_url = contract_instance.functions.tokenURI(int(token_id))
-                print(metadata_url)
         except Exception as e:
             print(f"Fetching metadata url failed (TRON): {e}")
 

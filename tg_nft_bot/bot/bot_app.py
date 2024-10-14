@@ -22,6 +22,8 @@ from telegram.ext import (
     TypeHandler,
     CallbackQueryHandler,
 )
+from tronpy import Tron
+from web3 import Web3
 from tg_nft_bot.bot.bot_utils import CustomContext, WebhookUpdate, create_webhook_route
 from tg_nft_bot.db.db_operations import (
     add_config,
@@ -36,6 +38,7 @@ from tg_nft_bot.db.db_operations import (
 )
 
 # helpers
+from tg_nft_bot.utils.addresses import get_hex_address, is_address
 from tg_nft_bot.utils.networks import NETWORK_SYMBOLS
 from tg_nft_bot.utils.credentials import TEST, TOKEN, URL
 from tg_nft_bot.streams.streams_operations import (
@@ -46,6 +49,7 @@ from tg_nft_bot.nft.nft_operations import get_collection_info
 from tg_nft_bot.nft.nft_constants import OPENSEA_NETWORK
 
 from tg_nft_bot.bot.bot_utils import application, webhook_update
+from tests.test_webhooks import test_blocks
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -107,7 +111,7 @@ def network_menu():
             InlineKeyboardButton("BNB", callback_data="bnbchain-mainnet"),
         ],
         [
-            InlineKeyboardButton("TRON", callback_data="avalanche-mainnet"),
+            InlineKeyboardButton("TRON", callback_data="tron-mainnet"),
             InlineKeyboardButton("ARB", callback_data="arbitrum-mainnet"),
             InlineKeyboardButton("MATIC", callback_data="polygon-mainnet"),
         ],
@@ -191,32 +195,41 @@ async def enter_website(update: Update, context: CustomContext):
             return WEBSITE
 
         try:
+            
             [name, slug] = get_collection_info(context.network, context.contract)
 
             if name == None:
                 raise Exception("Invalid contract address.")
 
             if website[:8] != "https://":
-                website = (
-                    "https://opensea.io/assets/"
-                    + OPENSEA_NETWORK[context.network]
-                    + "/"
-                    + context.contract
-                )
+                if context.network == 'tron-mainnet':
+                    website = (
+                        "https://apenft.io/#/collection/"
+                        + context.contract
+                    )
+                else:
+                    website = (
+                        "https://opensea.io/assets/"
+                        + OPENSEA_NETWORK[context.network]
+                        + "/"
+                        + context.contract
+                    )
 
             route = "/" + slug
             create_webhook_route(route)
-
+            
+            hex_address = get_hex_address(context.contract)
             if TEST == "true":
+                test_block = test_blocks['mint'][context.contract]
                 webhook_id = create_stream(
-                    network=context.network, contract=context.contract, route=route, status="paused"
+                    network=context.network, contract=hex_address, route=route, start_block=test_block-1, stop_block=test_block+1, status="active"
                 )
             else:
                 webhook_id = create_stream(
-                network=context.network, contract=context.contract, route=route
+                network=context.network, contract=hex_address, route=route
             )
                 
-            entry = check_if_exists(context.network, context.contract)
+            entry = check_if_exists(context.network, hex_address)
             if entry is None:
                 # TODO:
                 # check if contract exists
@@ -225,7 +238,7 @@ async def enter_website(update: Update, context: CustomContext):
                     name,
                     slug,
                     context.network,
-                    context.contract,
+                    hex_address,
                     website,
                     webhook_id,
                     [context.chat],
@@ -234,7 +247,7 @@ async def enter_website(update: Update, context: CustomContext):
             else:
 
                 chats: list[str] = query_chats_by_contract(
-                    context.network, context.contract
+                    context.network, hex_address
                 )
 
                 exist_count = chats.count(context.chat)
@@ -245,7 +258,7 @@ async def enter_website(update: Update, context: CustomContext):
                     name,
                     slug,
                     context.network,
-                    context.contract,
+                    hex_address,
                     website,
                     webhook_id,
                     chats,
@@ -310,7 +323,7 @@ async def enter_contract(update: Update, context: CustomContext):
         user_message = update.message
         await user_message.delete()
 
-        if contract is not None and len(contract) == 42 and contract[:2] == "0x":
+        if contract is not None and is_address(contract):
             context.contract = contract
             message_text = title_message
             message_text += (

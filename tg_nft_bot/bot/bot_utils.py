@@ -30,7 +30,7 @@ from tg_nft_bot.db.db_operations import (
 from tg_nft_bot.utils.networks import SCANS
 from tg_nft_bot.utils.credentials import TOKEN
 
-from tg_nft_bot.nft.nft_operations import get_image_url, get_log_data, get_metadata, get_total_supply
+from tg_nft_bot.nft.nft_operations import get_log_data, get_metadata, get_total_supply, get_url
 from tg_nft_bot.nft.nft_constants import MAGIC_EDEN, OPENSEA, RARIBLE
 
 # app
@@ -200,7 +200,7 @@ async def webhook_update(
         [img, text] = generate_output(
             network,
             data["contract"],
-            data["toAddress"],
+            data["owner"],
             data["token_id"],
             data["hash"],
             data["info"],
@@ -279,22 +279,22 @@ def generate_output(network, contract, owner, token_id, hash, info):
     nft_data = get_metadata(network, contract, token_id)
 
     nft_name = nft_data["name"]
-    nft_image = get_image_url(nft_data["image"])
+    nft_image = get_url(nft_data["image"], True)
 
     
     opensea = OPENSEA[network] + contract + "/" + token_id
     rarible = RARIBLE[network] + contract + ":" + token_id
     magicEden = MAGIC_EDEN[network] + contract + "/" + token_id
-    apenft = "https://apenft.io/#/asset/" + + contract + "/" + token_id
+    apenft = "https://apenft.io/#/asset/" + contract + "/" + token_id
     
     scan = SCANS[network]
 
     # message = '<a href="' + nft_image + '">&#8205;</a>'
     if info["type"] == "mint":
-        title = (f"NEW {collection_name} MINT! 🔥").upper()
-        message = f"\n<b>{title}</b>\n\n"
+        title = (f"NEW {collection_name} MINT!").upper()
+        message = f"\n<b>{title}</b>\n"
     elif info["type"] == "sale":
-        title = (f"NEW {collection_name} PURCHASE! 🔥").upper()
+        title = (f"NEW {collection_name} PURCHASE!").upper()
         message = f"\n<b>{title}</b>\n\n"
 
         price = info["price"]
@@ -321,11 +321,13 @@ def generate_output(network, contract, owner, token_id, hash, info):
 
     message += '<a href="' + website + '">Website</a> | '
 
-    message += '<a href="' + opensea + '">Opensea</a> | '
-
-    message += '<a href="' + rarible + '">Rarible</a> | '
-
-    message += '<a href="' + magicEden + '">MagicEden</a>\n'
+    if network == "tron-mainnet":
+        message += '<a href="' + apenft + '">ApeNFT.io</a> '
+        
+    else:
+        message += '<a href="' + opensea + '">Opensea</a> | '
+        message += '<a href="' + rarible + '">Rarible</a> | '
+        message += '<a href="' + magicEden + '">MagicEden</a>\n'
 
     message += "\n\nAD: "
     message += (

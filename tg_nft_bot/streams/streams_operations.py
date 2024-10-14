@@ -5,9 +5,10 @@ import requests
 from web3 import Web3, HTTPProvider
 from tronpy import Tron
 from tronpy import providers
+from tg_nft_bot.utils.addresses import get_hex_address
 from tg_nft_bot.utils.networks import RPC
 from tg_nft_bot.utils.credentials import QUICKNODE_API_KEY, TEST, TRONGRID_API_KEY, URL
-from tg_nft_bot.streams.streams_utils import get_filter, get_hex_address
+from tg_nft_bot.streams.streams_utils import get_filter
 
 qn_headers = {
     "Content-Type": "application/json",
@@ -76,10 +77,12 @@ def activate_stream(id:str):
 
 def create_stream(network:str, contract:str, route:str, start_block:int = 0, stop_block:int = -1, status = "active", url:str = qn_stream_url) -> Union[str,NoneType]:
 
-    contract = get_hex_address(contract)
+    
     
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract) + "-" + route[1:]
+    if TEST == "true":
+        stream_name += "-test"
     stream_url = f"{URL}{route}"
     
     if start_block == 0:
@@ -97,9 +100,12 @@ def create_stream(network:str, contract:str, route:str, start_block:int = 0, sto
                 stream["name"] == stream_name
                 and stream["destination_attributes"]["url"] == stream_url
             ):
-                stream_id = stream["id"]
-                print(f"Webhook already exists for this collection: id = {stream_id}")
-                break
+                if TEST == "true":
+                    delete_stream(stream["id"])
+                else:
+                    stream_id = stream["id"]
+                    print(f"Webhook already exists for this collection: id = {stream_id}")
+                    break
                 # delete_stream(stream_id)
 
     if stream_id is None:

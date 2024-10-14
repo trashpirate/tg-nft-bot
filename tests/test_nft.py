@@ -4,12 +4,13 @@ import requests
 from tronpy import Tron
 
 from tg_nft_bot.bot.bot_utils import parse_tx
-from tg_nft_bot.nft.nft_operations import get_log_data, get_collection_info, get_metadata, get_sale_info, get_total_supply
+from tg_nft_bot.nft.nft_operations import get_log_data, get_collection_info, get_metadata, get_total_supply, get_url, is_valid_url
 
 VALID_BASE_CONTRACT = "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6"
 INVALID_BASE_CONTRACT = "0xE9e5d3F02E91B8d3bc74CD7cc27d6F13bdfc0BB6"
 VALID_TRON_CONTRACT = "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf"
 INVALID_TRON_CONTRACT = "TRKTrqwxd1EkjfRMcocVu2CP9onVpHhbt9"
+
 
 def get_receipts(chain_type, tx_type):
     
@@ -26,6 +27,27 @@ def get_logs(chain_type, tx_type):
     receipts = json_data["receipts"]
     logs_list = [log for receipt in receipts for log in receipt["logs"]]
     return logs_list
+
+
+def test_is_valid_url():
+    
+    url = "https://gateway.btfs.io/btfs/QmZSQtptpUV17dmQQTGakbhU22MUxMJYCUq6MjjVm1C1Gb/612.json"
+    assert is_valid_url(url) == True
+
+def test_get_url():
+    
+    url = "https://gateway.btfs.io/btfs/QmZSQtptpUV17dmQQTGakbhU22MUxMJYCUq6MjjVm1C1Gb/612.json"
+    assert get_url(url) == "http://gateway.btfs.io/btfs/QmZSQtptpUV17dmQQTGakbhU22MUxMJYCUq6MjjVm1C1Gb/612.json"
+    
+    url = "btfs://QmZSQtptpUV17dmQQTGakbhU22MUxMJYCUq6MjjVm1C1Gb/612.json"
+    assert get_url(url) == "http://gateway.btfs.io/btfs/QmZSQtptpUV17dmQQTGakbhU22MUxMJYCUq6MjjVm1C1Gb/612.json"
+    
+    url = "ipfs://bafybeic2a7jdsztni6jsnq2oarb3o5g7iuya5r4lcjfqi64rsucirdfobm/5"
+    assert get_url(url) == "https://gateway.pinata.cloud/ipfs/bafybeic2a7jdsztni6jsnq2oarb3o5g7iuya5r4lcjfqi64rsucirdfobm/5"
+
+def test_get_image_url():
+    url = "ipfs://bafybeiaf6ppnztlf3k5edqrgq3zae5ih2y6vhf255hekkqn6vjwazhq36q/WHITE/flameling_white_4.png"
+    assert get_url(url, True) == "https://gateway.pinata.cloud/ipfs/bafybeiaf6ppnztlf3k5edqrgq3zae5ih2y6vhf255hekkqn6vjwazhq36q/WHITE/flameling_white_4.png"
 
 def test_parse_tx_tron_sale():
     receipts = get_receipts("tron", "sale")
@@ -164,3 +186,10 @@ def test_get_metadata_tron():
 
     data = get_metadata(network, VALID_TRON_CONTRACT, "2")
     assert "name" in data
+    
+    hex_addr = "0x" + Tron.to_hex_address(VALID_TRON_CONTRACT)
+    print(hex_addr)
+    data = get_metadata(network, hex_addr, "2")
+    assert "name" in data
+    
+    

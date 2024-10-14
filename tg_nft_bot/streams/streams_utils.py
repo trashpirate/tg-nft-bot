@@ -1,10 +1,8 @@
 import base64
 from tronpy import Tron
 
-def get_hex_address(contractAddress):
-    tron_hex_address = Tron.to_hex_address(contractAddress)
-    address = "0x" + tron_hex_address[2:]
-    return address
+from tg_nft_bot.utils.addresses import get_hex_address
+
 
 def get_qn_filter_code(contractAddress):
     
