@@ -83,7 +83,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract) + "-" + route[1:]
     if config.env != 'production':
-        stream_name += config.env
+        stream_name += "-" + config.env
     stream_url = f"{URL}{route}"
     
     if start_block == 0:
