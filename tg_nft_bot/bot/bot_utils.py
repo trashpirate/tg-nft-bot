@@ -301,7 +301,7 @@ def generate_output(network, contract, owner, token_id, hash, info):
         usd = info["price_usd"]
         currency = info["currency"]
         marketplace = info["marketplace"]
-        message += f"Price: {price:.3f} {currency} ({usd:.3f} USD)\n"
+        message += f"Price: {price} {currency} ({usd} USD)\n"
         message += f"Marketplace: {marketplace.upper()}\n"
 
     message += f"\n<u><b>{nft_name}</b></u>\n"

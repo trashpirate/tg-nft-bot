@@ -168,8 +168,8 @@ def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
 
             return {
                 "type": events[0]["type"],
-                "price": price_native,
-                "price_usd": price_usd,
+                "price": f"{price_native:.3f}",
+                "price_usd": f"{price_usd:.3f}",
                 "currency": currency,
                 "marketplace": marketplace,
             }     

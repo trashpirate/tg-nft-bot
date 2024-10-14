@@ -220,7 +220,7 @@ async def enter_website(update: Update, context: CustomContext):
             
             hex_address = get_hex_address(context.contract)
             if TEST == "true":
-                test_block = test_blocks['mint'][context.contract]
+                test_block = test_blocks['sale'][context.contract]
                 webhook_id = create_stream(
                     network=context.network, contract=hex_address, route=route, start_block=test_block-1, stop_block=test_block+1, status="active"
                 )
