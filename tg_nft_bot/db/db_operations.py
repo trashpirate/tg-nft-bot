@@ -180,7 +180,8 @@ def query_chats_by_contract(network, contract):
 
 
 def check_if_exists(network, contract):
-
+    print("Network: ",  network)
+    print("Contract: ", contract)
     with flask_app.app_context():
 
         entry = CollectionConfigs.query.filter_by(
