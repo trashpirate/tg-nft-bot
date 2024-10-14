@@ -49,7 +49,6 @@ from tg_nft_bot.nft.nft_operations import get_collection_info
 from tg_nft_bot.nft.nft_constants import OPENSEA_NETWORK
 
 from tg_nft_bot.bot.bot_utils import application, webhook_update
-from tests.test_webhooks import test_blocks
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -152,9 +151,6 @@ def bot_removed(update: Update, context: CallbackContext) -> None:
                 update_chats_by_id(collection["id"], new_chats)
 
 
-
-
-
 async def enter_website(update: Update, context: CustomContext):
 
     query = update.callback_query
@@ -195,18 +191,15 @@ async def enter_website(update: Update, context: CustomContext):
             return WEBSITE
 
         try:
-            
+
             [name, slug] = get_collection_info(context.network, context.contract)
 
             if name == None:
                 raise Exception("Invalid contract address.")
 
             if website[:8] != "https://":
-                if context.network == 'tron-mainnet':
-                    website = (
-                        "https://apenft.io/#/collection/"
-                        + context.contract
-                    )
+                if context.network == "tron-mainnet":
+                    website = "https://apenft.io/#/collection/" + context.contract
                 else:
                     website = (
                         "https://opensea.io/assets/"
@@ -217,12 +210,12 @@ async def enter_website(update: Update, context: CustomContext):
 
             route = "/" + slug
             create_webhook_route(route)
-            
+
             hex_address = get_hex_address(context.contract)
             webhook_id = create_stream(
                 network=context.network, contract=hex_address, route=route
             )
-                
+
             entry = check_if_exists(context.network, hex_address)
             if entry is None:
                 # TODO:
@@ -240,9 +233,7 @@ async def enter_website(update: Update, context: CustomContext):
                 status = "_Collection is added._"
             else:
 
-                chats: list[str] = query_chats_by_contract(
-                    context.network, hex_address
-                )
+                chats: list[str] = query_chats_by_contract(context.network, hex_address)
 
                 exist_count = chats.count(context.chat)
                 if exist_count == 0:
@@ -262,7 +253,9 @@ async def enter_website(update: Update, context: CustomContext):
         except Exception as e:
             traceback.print_exc()
             status = (
-                "_Configuration failed: " + str(e) + "\nPlease start over and try again._"
+                "_Configuration failed: "
+                + str(e)
+                + "\nPlease start over and try again._"
             )
 
         message_text = title_message
@@ -583,7 +576,7 @@ async def add_collection(update: Update, context: CustomContext):
         row_buttons = []
         config_buttons = []
         rows: list[dict] = query_table()
-       
+
         for r in rows:
             cid = r["id"]
             name = r["name"]
@@ -609,7 +602,12 @@ async def add_collection(update: Update, context: CustomContext):
             elif network == "tron-mainnet":
                 website = "https://apenft.io/#/collection/" + contract
             else:
-                website = "https://opensea.io/assets/" + OPENSEA_NETWORK[network] + "/" + contract
+                website = (
+                    "https://opensea.io/assets/"
+                    + OPENSEA_NETWORK[network]
+                    + "/"
+                    + contract
+                )
 
             # output message
             message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "

@@ -29,8 +29,9 @@ abi_json = os.path.join(current_dir, "..", "..", "assets", "NFT.json")
 
 gateways = {
     "ipfs": ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"],
-    "btfs": ["gateway.btfs.io"]
-    }
+    "btfs": ["gateway.btfs.io"],
+}
+
 
 class SaleData(TypedDict):
     type: str
@@ -38,7 +39,8 @@ class SaleData(TypedDict):
     price_usd: str
     currency: str
     marketplace: str
-    
+
+
 class LogData(TypedDict):
     network: str
     webhook_id: str
@@ -47,14 +49,15 @@ class LogData(TypedDict):
     owner: str
     hash: str
     info: SaleData
-    
-def is_valid_url(url: str, is_image = False) -> bool:
-        
+
+
+def is_valid_url(url: str, is_image=False) -> bool:
+
     try:
         response = requests.get(url)
-        
+
         if response.status_code == 200:
-            
+
             if is_image:
                 image = Image.open(BytesIO(response.content))
                 image.verify()
@@ -62,12 +65,13 @@ def is_valid_url(url: str, is_image = False) -> bool:
             return True
         else:
             return False
-            
+
     except Exception:
         return False
 
-def get_url(link: str, is_image = False) -> str:
-    
+
+def get_url(link: str, is_image=False) -> str:
+
     if link[:8] == "https://":
         url = link
         if is_valid_url(url, is_image):
@@ -87,19 +91,27 @@ def get_url(link: str, is_image = False) -> str:
             else:
                 url = url[:4] + url[5:]
                 if is_valid_url(url, is_image):
-                    return url  
+                    return url
 
     return ""
 
-                
+
 def is_transfer(topics: List[str]) -> bool:
-    return len(topics) == 4 and topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    return (
+        len(topics) == 4
+        and topics[0]
+        == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    )
+
 
 def is_mint(addr_from: str) -> bool:
     return addr_from == "0x0000000000000000000000000000000000000000"
 
-def get_log_data(network:str, webhook_id:str, logs: List[Dict[str, Any]]) -> Union[List[LogData], NoneType]:
-    
+
+def get_log_data(
+    network: str, webhook_id: str, logs: List[Dict[str, Any]]
+) -> Union[List[LogData], NoneType]:
+
     data: List[LogData] = []
     for log in logs:
 
@@ -121,11 +133,12 @@ def get_log_data(network:str, webhook_id:str, logs: List[Dict[str, Any]]) -> Uni
                     info=info,
                 )
             )
-    
+
     return data
 
+
 def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
-    
+
     addr_from = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
     if is_mint(addr_from):
         return {
@@ -134,7 +147,7 @@ def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
             "price_usd": "N/A",
             "currency": "N/A",
             "marketplace": "N/A",
-        }            
+        }
     elif network == "tron-mainnet":
         w3 = Web3(Web3.HTTPProvider(RPC[network]))
         tx = w3.eth.get_transaction_receipt(log["transactionHash"])
@@ -142,7 +155,7 @@ def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
             hex_str = log["data"].hex()
             if len(hex_str) == 192:
                 price = float(int(hex_str[128:], 16)) / 1e6
-            
+
                 return {
                     "type": "sale",
                     "price": "%.2f" % price,
@@ -172,8 +185,8 @@ def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
                 "price_usd": f"{price_usd:.3f}",
                 "currency": currency,
                 "marketplace": marketplace,
-            }     
-                
+            }
+
     return None
 
 
@@ -253,6 +266,7 @@ def get_total_supply(network, contract):
 
     finally:
         return total_supply
+
 
 def get_metadata_json(metadataLink: str):
 

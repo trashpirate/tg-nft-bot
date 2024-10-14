@@ -1,5 +1,3 @@
-
-
 env = "local"
 test_blocks = {
     "sale": {
@@ -19,8 +17,8 @@ test_blocks = {
     "none": {
         "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 20449824,  # eth
         "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20942865,  # base
-        "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 53181087
-    }
+        "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 53181087,
+    },
 }
 
 START_BLOCK_OFFSET = -1

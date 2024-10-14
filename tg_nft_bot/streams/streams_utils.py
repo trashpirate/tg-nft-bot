@@ -5,9 +5,9 @@ from tg_nft_bot.utils.addresses import get_hex_address
 
 
 def get_qn_filter_code(contractAddress):
-    
+
     address = get_hex_address(contractAddress)
-    
+
     js_code = """
     function main(data) {
         try {
@@ -36,17 +36,18 @@ def get_qn_filter_code(contractAddress):
     """
 
     js_code = js_code.replace("contractAddress", f'"{address}"')
-    
+
     return js_code
 
+
 def encode_base64(js_code):
-    
-    base64_filter = base64.b64encode(js_code.encode('utf-8')).decode('utf-8')
+
+    base64_filter = base64.b64encode(js_code.encode("utf-8")).decode("utf-8")
     return base64_filter
+
 
 def get_filter(contractAddress):
     js_code = get_qn_filter_code(contractAddress)
     base64_code = encode_base64(js_code)
-    
-    return base64_code
 
+    return base64_code

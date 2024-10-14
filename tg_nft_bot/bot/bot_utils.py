@@ -10,14 +10,10 @@ from telegram import (
     Update,
 )
 from telegram.ext import (
-    
     ApplicationBuilder,
-   
     ContextTypes,
-    
     CallbackContext,
     ExtBot,
-    
     Application,
 )
 from web3 import Web3
@@ -30,11 +26,17 @@ from tg_nft_bot.db.db_operations import (
 from tg_nft_bot.utils.networks import SCANS
 from tg_nft_bot.utils.credentials import TOKEN
 
-from tg_nft_bot.nft.nft_operations import get_log_data, get_metadata, get_total_supply, get_url
+from tg_nft_bot.nft.nft_operations import (
+    get_log_data,
+    get_metadata,
+    get_total_supply,
+    get_url,
+)
 from tg_nft_bot.nft.nft_constants import MAGIC_EDEN, OPENSEA, RARIBLE
 
 # app
 from tg_nft_bot.bot.bot_config import flask_app
+
 
 # context
 class ChatData:
@@ -163,7 +165,7 @@ def parse_tx(json_data):
                     receipts = json_data["data"][0]["receipts"]
                 except Exception:
                     raise Exception("No receipts found.")
-                
+
         except Exception:
             traceback.print_exc()
             return None
@@ -177,13 +179,14 @@ def parse_tx(json_data):
         network = json_data["metadata"]["network"]
         webhook_id = json_data["metadata"]["stream_id"]
         logs_list = [log for receipt in receipts for log in receipt["logs"]]
-        
+
         logs = get_log_data(network, webhook_id, logs_list)
         return logs
-    
+
     except Exception:
         traceback.print_exc()
         return None
+
 
 async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
@@ -233,6 +236,7 @@ async def update_queue(new_data):
 async def update_webhook_queue(new_data):
     await application.update_queue.put(WebhookUpdate(data=new_data))
 
+
 # create bot
 context_types = ContextTypes(context=CustomContext, chat_data=ChatData)
 application = (
@@ -260,12 +264,11 @@ def generate_output(network, contract, owner, token_id, hash, info):
     nft_name = nft_data["name"]
     nft_image = get_url(nft_data["image"], True)
 
-    
     opensea = OPENSEA[network] + contract + "/" + token_id
     rarible = RARIBLE[network] + contract + ":" + token_id
     magicEden = MAGIC_EDEN[network] + contract + "/" + token_id
     apenft = "https://apenft.io/#/asset/" + contract + "/" + token_id
-    
+
     scan = SCANS[network]
 
     if info["type"] == "mint":
@@ -301,7 +304,7 @@ def generate_output(network, contract, owner, token_id, hash, info):
 
     if network == "tron-mainnet":
         message += '<a href="' + apenft + '">ApeNFT.io</a> '
-        
+
     else:
         message += '<a href="' + opensea + '">Opensea</a> | '
         message += '<a href="' + rarible + '">Rarible</a> | '

@@ -14,7 +14,7 @@ from tg_nft_bot.streams.streams_operations import (
     get_filter,
     get_stream_by_id,
     pause_stream,
-    qn_headers
+    qn_headers,
 )
 
 from tg_nft_bot.utils.addresses import get_hex_address
@@ -32,7 +32,6 @@ INVALID_TRON_CONTRACT = "TRKTrqwxd1EkjfRMcocVu2CP9onVpHhbt9"
 
 BASE_MINT_BLOCK = 16929599
 TRON_MINT_BLOCK = 65927841
-
 
 
 def stream_filter(network, contract, block):
@@ -61,6 +60,7 @@ def stream_filter(network, contract, block):
 
     return data_json["filteredCount"]
 
+
 def test_all_stream_filters():
 
     count = stream_filter("base-mainnet", VALID_BASE_CONTRACT, BASE_MINT_BLOCK)
@@ -69,78 +69,107 @@ def test_all_stream_filters():
     count = stream_filter("tron-mainnet", VALID_TRON_CONTRACT, TRON_MINT_BLOCK)
     assert count == 1
 
+
 def test_get_streams():
     streams = get_streams()
-    
+
     assert "id" in streams[0]
-    
+
     for stream in streams:
         print(stream["name"] + ": " + stream["id"])
 
+
 def test_check_if_stream_exists():
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
+    id = create_stream(
+        network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused"
+    )
     assert check_if_stream_exists(id) == True
 
+
 def test_get_stream_by_id():
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
+    id = create_stream(
+        network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused"
+    )
     data = get_stream_by_id(id)
-    assert data['id'] == id
-    
+    assert data["id"] == id
+
+
 def test_activate_and_pause_stream():
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
-    
+    id = create_stream(
+        network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused"
+    )
+
     activate_stream(id)
     data = get_stream_by_id(id)
-    assert data['status'] == "active"
-    
+    assert data["status"] == "active"
+
     pause_stream(id)
     data = get_stream_by_id(id)
-    assert data['status'] == "paused"
+    assert data["status"] == "paused"
+
 
 def test_delete_nonexistent_stream():
     id = "f17e02c5-afc4-4705-b8fc-3cd3013e773e"
-    
+
     with pytest.raises(Exception):
         delete_stream(id)
 
+
 def test_delete_stream():
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
+    id = create_stream(
+        network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused"
+    )
     delete_stream(id)
-        
+
     assert not check_if_stream_exists(id)
-    
+
+
 def test_create_stream_evm():
-    
-    id = create_stream(network='base-mainnet', contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6", route="/test")
+
+    id = create_stream(
+        network="base-mainnet",
+        contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6",
+        route="/test",
+    )
     delete_stream(id)
-    
-    id = create_stream(network='base-mainnet', contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6", route="/test")
+
+    id = create_stream(
+        network="base-mainnet",
+        contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6",
+        route="/test",
+    )
     assert check_if_stream_exists(id)
 
+
 def test_create_stream_tron():
-    
-    id = create_stream(network='tron-mainnet', contract='TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf', route="/test")
+
+    id = create_stream(
+        network="tron-mainnet",
+        contract="TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf",
+        route="/test",
+    )
     delete_stream(id)
-    
-    id = create_stream(network='tron-mainnet', contract='TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf', route="/test")
+
+    id = create_stream(
+        network="tron-mainnet",
+        contract="TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf",
+        route="/test",
+    )
     assert check_if_stream_exists(id)
- 
- 
- 
- 
- 
+
+
 # def test_create_webhook_request():
-    
+
 #     # copy url from https://typedwebhook.tools/
-    
+
 #     network = "base-mainnet"
 #     contract = "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6"
 #     response = create_stream(network=network, contract=contract, route="/test", start_block=BASE_MINT_BLOCK, stop_block=BASE_MINT_BLOCK+1, url="https://typedwebhook.tools/webhook/cef92bac-2658-4cc5-b4b3-f9eca49a3a1b")
-    
+
 #     print(response)
-    
+
 # def test_create_test_webhook():
-    
+
 #     url = "https://api.quicknode.com/streams/rest/v1/streams"
 
 #     filter = get_test_filter()
@@ -192,12 +221,12 @@ def test_create_stream_tron():
 #         },
 #         "user": {"email": "tester@example.com"},
 #     }
-    
+
 #     headers = {
 #         "accept": "application/json",
 #         "Content-Type": "application/json",
 #         "x-api-key": QUICKNODE_API_KEY,  # Replace with your actual API key
 #     }
-    
+
 #     response = requests.post(url, headers=headers, json=payload)
 #     print(response.text)

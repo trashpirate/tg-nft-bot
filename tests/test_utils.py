@@ -1,8 +1,9 @@
 import base64
 
+
 def get_test_filter():
     # JavaScript filter function
-    js_filter = '''
+    js_filter = """
     function main(data) {
         try {
             var data = data.streamData;
@@ -25,9 +26,9 @@ def get_test_filter():
             return {error: e.message};
         }
     }
-    '''
-    
+    """
+
     # Encode the JavaScript function to base64
-    base64_filter = base64.b64encode(js_filter.encode('utf-8')).decode('utf-8')
-    
+    base64_filter = base64.b64encode(js_filter.encode("utf-8")).decode("utf-8")
+
     return base64_filter
