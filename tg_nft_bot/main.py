@@ -7,7 +7,7 @@ from asgiref.wsgi import WsgiToAsgi
 
 from tg_nft_bot.bot.bot_utils import create_webhook_route, update_queue
 from tg_nft_bot.db.db_operations import initial_config, query_table
-from tg_nft_bot.utils.credentials import PORT, TEST
+from tg_nft_bot.utils.credentials import ENV, PORT
 
 from tg_nft_bot.bot.bot_app import (
     start_app,
@@ -50,7 +50,7 @@ async def main() -> None:
     async with bot:
         await bot.start()
         print("Bot started. Starting Server...")
-        print("Test mode: " + TEST)
+        print("Test mode: " + ENV)
         await webserver.serve()
         await bot.stop()
 

@@ -15,4 +15,5 @@ OPENSEA_API_KEY = str(os.getenv("OPENSEA_API_KEY"))
 RESERVOIR_API_KEY = str(os.getenv("RESERVOIR_API_KEY"))
 TRONGRID_API_KEY = str(os.getenv("TRONGRID_API_KEY"))
 
-TEST = str(os.getenv("TEST"))
+ENV = str(os.getenv("ENV"))
+TEST_TYPE = str(os.getenv("TEST_TYPE"))

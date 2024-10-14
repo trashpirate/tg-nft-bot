@@ -17,6 +17,7 @@ from tg_nft_bot.streams.streams_operations import (
     qn_headers
 )
 
+from tg_nft_bot.utils.addresses import get_hex_address
 from tg_nft_bot.utils.credentials import QUICKNODE_API_KEY
 from tg_nft_bot.streams.streams_utils import encode_base64, get_qn_filter_code
 
@@ -32,27 +33,7 @@ INVALID_TRON_CONTRACT = "TRKTrqwxd1EkjfRMcocVu2CP9onVpHhbt9"
 BASE_MINT_BLOCK = 16929599
 TRON_MINT_BLOCK = 65927841
 
-test_blocks = {
-    "sale": {
-        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19458239,  # eth
-        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20202705,  # multi: 16935164, single: 16929599, none: 17974345
-        "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 66036854,
-    },
-    "mint": {
-        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19515454,  # eth
-        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20730026,  # multi: 16935164, single: 16929599, none: 17974345
-        "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 66054608,
-    },
-    "multi": {
-        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19511771,
-        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20910484,
-    },
-    "none": {
-        "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 20449824,  # eth
-        "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20942865,  # base
-        "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 53181087
-    }
-}
+
 
 def stream_filter(network, contract, block):
 
@@ -128,12 +109,20 @@ def test_delete_stream():
         
     assert not check_if_stream_exists(id)
     
-def test_create_stream():
+def test_create_stream_evm():
     
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
+    id = create_stream(network='base-mainnet', contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6", route="/test")
     delete_stream(id)
     
-    id = create_stream(network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused")
+    id = create_stream(network='base-mainnet', contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6", route="/test")
+    assert check_if_stream_exists(id)
+
+def test_create_stream_tron():
+    
+    id = create_stream(network='tron-mainnet', contract='TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf', route="/test")
+    delete_stream(id)
+    
+    id = create_stream(network='tron-mainnet', contract='TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf', route="/test")
     assert check_if_stream_exists(id)
  
  

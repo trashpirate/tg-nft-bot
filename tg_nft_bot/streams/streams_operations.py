@@ -7,8 +7,11 @@ from tronpy import Tron
 from tronpy import providers
 from tg_nft_bot.utils.addresses import get_hex_address
 from tg_nft_bot.utils.networks import RPC
-from tg_nft_bot.utils.credentials import QUICKNODE_API_KEY, TEST, TRONGRID_API_KEY, URL
+from tg_nft_bot.utils.credentials import ENV, QUICKNODE_API_KEY, TEST_TYPE, TRONGRID_API_KEY, URL
 from tg_nft_bot.streams.streams_utils import get_filter
+
+from tg_nft_bot.config import local, staging, production
+config = {"local": local, "staging": staging, "production": production}[ENV]
 
 qn_headers = {
     "Content-Type": "application/json",
@@ -75,14 +78,12 @@ def activate_stream(id:str):
     print(response.text)
 
 
-def create_stream(network:str, contract:str, route:str, start_block:int = 0, stop_block:int = -1, status = "active", url:str = qn_stream_url) -> Union[str,NoneType]:
-
-    
+def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, stop_block:int = -1, status = "active", url:str = qn_stream_url) -> Union[str,NoneType]:
     
     stream_id = None
     stream_name = network + "-" + Web3.to_checksum_address(contract) + "-" + route[1:]
-    if TEST == "true":
-        stream_name += "-test"
+    if config.env != 'production':
+        stream_name += config.env
     stream_url = f"{URL}{route}"
     
     if start_block == 0:
@@ -100,13 +101,12 @@ def create_stream(network:str, contract:str, route:str, start_block:int = 0, sto
                 stream["name"] == stream_name
                 and stream["destination_attributes"]["url"] == stream_url
             ):
-                if TEST == "true":
+                if config.env != 'production':
                     delete_stream(stream["id"])
                 else:
                     stream_id = stream["id"]
                     print(f"Webhook already exists for this collection: id = {stream_id}")
                     break
-                # delete_stream(stream_id)
 
     if stream_id is None:
         try:
@@ -151,3 +151,24 @@ def create_stream(network:str, contract:str, route:str, start_block:int = 0, sto
             traceback.print_exc()
 
     return stream_id      
+
+def create_stream(network:str, contract:str, route:str) -> Union[str,NoneType]:
+    if config.env == 'local':
+        # Use local/staging-specific test block logic
+        print('Environment: ', config.env)
+        test_block = config.test_blocks[TEST_TYPE][contract]
+        print('Test block: ', test_block)
+        webhook_id = create_qn_stream(
+            network=network,
+            contract=get_hex_address(contract),
+            route=route,
+            start_block=test_block + config.START_BLOCK_OFFSET,
+            stop_block=test_block + config.STOP_BLOCK_OFFSET,
+            status="active"
+        )
+    elif config.env == 'staging':
+        webhook_id = create_qn_stream(network=network, contract=contract, route=route, status="paused")
+        
+    else:
+         webhook_id = create_qn_stream(network=network, contract=contract, route=route)
+    return webhook_id

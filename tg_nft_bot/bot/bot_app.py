@@ -40,7 +40,7 @@ from tg_nft_bot.db.db_operations import (
 # helpers
 from tg_nft_bot.utils.addresses import get_hex_address, is_address
 from tg_nft_bot.utils.networks import NETWORK_SYMBOLS
-from tg_nft_bot.utils.credentials import TEST, TOKEN, URL
+from tg_nft_bot.utils.credentials import URL
 from tg_nft_bot.streams.streams_operations import (
     create_stream,
     delete_stream,
@@ -219,13 +219,7 @@ async def enter_website(update: Update, context: CustomContext):
             create_webhook_route(route)
             
             hex_address = get_hex_address(context.contract)
-            if TEST == "true":
-                test_block = test_blocks['sale'][context.contract]
-                webhook_id = create_stream(
-                    network=context.network, contract=hex_address, route=route, start_block=test_block-1, stop_block=test_block+1, status="active"
-                )
-            else:
-                webhook_id = create_stream(
+            webhook_id = create_stream(
                 network=context.network, contract=hex_address, route=route
             )
                 
