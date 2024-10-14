@@ -5,6 +5,7 @@ NETWORK_SYMBOLS = {
     "arbitrum-mainnet": "ARB",
     "avalanche-mainnet": "AVAX",
     "polygon-mainnet": "MATIC",
+    "tron-mainnet": "TRON",
 }
 
 RPC = {
@@ -14,4 +15,15 @@ RPC = {
     "avalanche-mainnet": "https://quick-twilight-river.avalanche-mainnet.quiknode.pro/21047f4234e2f035ad804edf6019e153efb4f2a5/ext/bc/C/rpc/",
     "arbitrum-mainnet": "https://fluent-distinguished-research.arbitrum-mainnet.quiknode.pro/b1c4d69561c9735d4d15c5ad81ad88bb26409bea/",
     "polygon-mainnet": "https://convincing-nameless-replica.matic.quiknode.pro/6dbf5fed1a503962f06a822716e4bb04155dcb2d/",
+    "tron-mainnet": "https://practical-wispy-log.tron-mainnet.quiknode.pro/4d841ea6709f6e456b8155894ce7c907ecb71afe/jsonrpc",
+}
+
+SCANS = {
+    "ethereum-mainnet": "https://etherscan.io/",
+    "bnbchain-mainnet": "https://bscscan.com/",
+    "base-mainnet": "https://basescan.org/",
+    "avalanche-mainnet": "https://snowtrace.io/",
+    "arbitrum-mainnet": "https://arbiscan.io/",
+    "polygon-mainnet": "https://polygonscan.com/",
+    "tron-mainnet": "https://tronscan.org/",
 }

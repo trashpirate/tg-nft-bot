@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "tg_nft_bot"
+version = "0.1.0"
+description = "NFT Notification Bot"
+authors = ["Nadina Oates <nadinaoates@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytest = "^8.3.3"
+black = "^24.10.0"
+mypy = "^1.11.2"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^5.0.0"  # For test coverage
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.mypy]
+strict = true

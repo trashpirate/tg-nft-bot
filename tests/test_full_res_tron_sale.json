@@ -1,0 +1,69 @@
+{
+    "data": {
+        "filteredCount": 1,
+        "receipts": [
+            {
+                "blockHash": "0x0000000003ef46f61dcfe79d007fdb88e9f363c4944ab68ac44ba9de5f31fc62",
+                "blockNumber": "0x3ef46f6",
+                "contractAddress": null,
+                "cumulativeGasUsed": "0x2bde9a",
+                "effectiveGasPrice": "0xd2",
+                "from": "0x4e8797547bed0b77e1aae0841c4f6dad17e91134",
+                "gasUsed": "0x2517b",
+                "logs": [
+                    {
+                        "address": "0x2b1feed8646a37a231caa1127ee9a985d363ea20",
+                        "blockHash": "0x0000000003ef46f61dcfe79d007fdb88e9f363c4944ab68ac44ba9de5f31fc62",
+                        "blockNumber": "0x3ef46f6",
+                        "data": "0x",
+                        "logIndex": "0x1d",
+                        "removed": false,
+                        "topics": [
+                            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                            "0x0000000000000000000000000a9fe791f408e2ed5ea132ed388d19120e3ec3d0",
+                            "0x0000000000000000000000004e8797547bed0b77e1aae0841c4f6dad17e91134",
+                            "0x00000000000000000000000000000000000000000000000000000000000000e0"
+                        ],
+                        "transactionHash": "0x47e08d28319abf822c9783441b57662eabb80183f51eccf440c0b63d64f3eac2",
+                        "transactionIndex": "0x35"
+                    },
+                    {
+                        "address": "0xa330c8f2530abc95fb625c64d986085e2d7e8ede",
+                        "blockHash": "0x0000000003ef46f61dcfe79d007fdb88e9f363c4944ab68ac44ba9de5f31fc62",
+                        "blockNumber": "0x3ef46f6",
+                        "data": "0x0000000000000000000000000000000000000000000000000000000000000000f55bc785111e49de0081c2b11263300c7e63be333f5fde5a8452946024843f170000000000000000000000000000000000000000000000000000000011d260c0",
+                        "logIndex": "0x1e",
+                        "removed": false,
+                        "topics": [
+                            "0xc4109843e0b7d514e4c093114b863f8e7d8d9a458c372cd51bfe526b588006c9",
+                            "0x0000000000000000000000000a9fe791f408e2ed5ea132ed388d19120e3ec3d0",
+                            "0x0000000000000000000000004e8797547bed0b77e1aae0841c4f6dad17e91134",
+                            "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        ],
+                        "transactionHash": "0x47e08d28319abf822c9783441b57662eabb80183f51eccf440c0b63d64f3eac2",
+                        "transactionIndex": "0x35"
+                    }
+                ],
+                "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "status": "0x1",
+                "to": "0xa330c8f2530abc95fb625c64d986085e2d7e8ede",
+                "transactionHash": "0x47e08d28319abf822c9783441b57662eabb80183f51eccf440c0b63d64f3eac2",
+                "transactionIndex": "0x35",
+                "type": "0x0"
+            }
+        ],
+        "totalReceipts": 98
+    },
+    "metadata": {
+        "batch_end_range": 66012918,
+        "batch_start_range": 66012918,
+        "dataset": "receipts",
+        "end_range": -1,
+        "keep_distance_from_tip": 0,
+        "network": "tron-mainnet",
+        "start_range": 66007269,
+        "stream_id": "ce29acce-79aa-45eb-a5cb-0f5ae3ef35c7",
+        "stream_name": "tron-mainnet-0x2B1fEEd8646A37a231CAa1127Ee9A985D363EA20-test",
+        "stream_region": "usa_east"
+    }
+}

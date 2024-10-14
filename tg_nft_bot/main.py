@@ -4,12 +4,15 @@ from flask import Response, request
 import uvicorn
 from asgiref.wsgi import WsgiToAsgi
 
-from bot import start_app, update_queue, update_webhook_queue, create_webhook_route
 
-from models import initial_config, query_table
-from credentials import PORT, TEST
+from tg_nft_bot.bot.bot_utils import create_webhook_route, update_queue
+from tg_nft_bot.db.db_operations import initial_config, query_table
+from tg_nft_bot.utils.credentials import ENV, PORT
 
-from app import flask_app
+from tg_nft_bot.bot.bot_app import (
+    start_app,
+)
+from tg_nft_bot.bot.bot_config import flask_app
 
 
 async def main() -> None:
@@ -47,7 +50,7 @@ async def main() -> None:
     async with bot:
         await bot.start()
         print("Bot started. Starting Server...")
-        print("Test mode: " + TEST)
+        print("Test mode: " + ENV)
         await webserver.serve()
         await bot.stop()
 
