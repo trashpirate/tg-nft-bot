@@ -439,33 +439,35 @@ async def select_action(update: Update, context: CustomContext):
                             pass
 
                     # throw exception if user is not admin in any of the configured groups
-                    if len(chats_isAdmin) == 0:
-                        raise Exception("User is not admin of any configurations.")
+                    if len(chats_isAdmin) > 0:
 
-                    message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
+                        message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
-                    for chat in chats_isAdmin:
-                        group_chat = await context.bot.get_chat(chat)
-                        if group_chat.title is None:
-                            chat_name = group_chat.username
-                        else:
-                            chat_name = group_chat.title
-                        message_text += chat_name + ", "
+                        for chat in chats_isAdmin:
+                            group_chat = await context.bot.get_chat(chat)
+                            if group_chat.title is None:
+                                chat_name = group_chat.username
+                            else:
+                                chat_name = group_chat.title
+                            message_text += chat_name + ", "
 
-                    message_text = message_text[:-2] + "\n\n"
+                        message_text = message_text[:-2] + "\n\n"
 
-                    row_buttons = [
-                        InlineKeyboardButton(
-                            "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
-                        ),
-                        InlineKeyboardButton(
-                            "DELETE CONFIG " + str(index),
-                            callback_data="del-" + str(cid),
-                        ),
-                    ]
-                    config_buttons.append(row_buttons)
+                        row_buttons = [
+                            InlineKeyboardButton(
+                                "ADD CONFIG " + str(index), callback_data="add-" + str(cid)
+                            ),
+                            InlineKeyboardButton(
+                                "DELETE CONFIG " + str(index),
+                                callback_data="del-" + str(cid),
+                            ),
+                        ]
+                        config_buttons.append(row_buttons)
                     index += 1
 
+                if len(config_buttons) == 0:
+                    raise Exception("No configurations found.")
+                
             config_buttons.append(
                 [
                     InlineKeyboardButton("RETURN", callback_data="return"),
