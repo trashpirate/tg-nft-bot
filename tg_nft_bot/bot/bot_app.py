@@ -430,10 +430,13 @@ async def select_action(update: Update, context: CustomContext):
                     print("Chats: " , chats)
                     chats_isAdmin = []
                     for chat in chats:
-                        admins = await application.bot.get_chat_administrators(chat)
-                        admin_ids = [admin["user"]["id"] for admin in admins]
-                        if update.effective_user.id in admin_ids:
-                            chats_isAdmin.append(chat)
+                        try:
+                            admins = await application.bot.get_chat_administrators(chat)
+                            admin_ids = [admin["user"]["id"] for admin in admins]
+                            if update.effective_user.id in admin_ids:
+                                chats_isAdmin.append(chat)
+                        except Exception:
+                            pass
 
                     # throw exception if user is not admin in any of the configured groups
                     if len(chats_isAdmin) == 0:
