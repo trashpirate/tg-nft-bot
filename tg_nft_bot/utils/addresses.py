@@ -5,7 +5,7 @@ from web3 import Web3
 def get_hex_address(contractAddress):
     tron_hex_address = Tron.to_hex_address(contractAddress)
     address = "0x" + tron_hex_address[2:]
-    return address
+    return Web3.to_checksum_address(address)
 
 
 def isTronAddress(address):
