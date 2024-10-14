@@ -29,7 +29,6 @@ class CollectionConfigs(db.Model):
 #     name = db.Column(db.String(255), nullable=True)
 #     tgId = db.Column(db.BigInteger, nullable=True)
 
-
 def query_table():
     with flask_app.app_context():
         collections = CollectionConfigs.query.all()
