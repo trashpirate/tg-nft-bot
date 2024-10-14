@@ -428,7 +428,7 @@ async def select_action(update: Update, context: CustomContext):
                     contract = r["contract"]
                     website = r["website"]
                     chats = r["chats"]
-                    print("Chats: " , chats)
+                    
                     chats_isAdmin = []
                     for chat in chats:
                         try:
@@ -441,7 +441,8 @@ async def select_action(update: Update, context: CustomContext):
 
                     # throw exception if user is not admin in any of the configured groups
                     if len(chats_isAdmin) > 0:
-
+                        if(network == "tron-mainnet"):
+                            contract = Tron.to_base58check_address(Tron.to_hex_address(contract))
                         message_text += f"<u><b>CONFIG {index}:</b></u>\nName: {name}\nNetwork: {NETWORK_SYMBOLS[network]}\nCA: {contract}\nWebsite: {website}\nChats: "
 
                         for chat in chats_isAdmin:
