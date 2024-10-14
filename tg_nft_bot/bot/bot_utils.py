@@ -244,28 +244,7 @@ application = (
     .build()
 )
 
-# def downloadImage(url):
-#     try:
-#         response = requests.get(url)
-#         response.raise_for_status()
 
-#         image = Image.open(BytesIO(response.content))
-#         file_extension = image.format.lower()  # e.g., 'jpeg' or 'png'
-#         if file_extension == "jpeg":
-#             file_extension = "jpg"
-
-#         # Create a temporary file to save the image
-#         with tempfile.NamedTemporaryFile(
-#             delete=False, suffix=f".{file_extension}"
-#         ) as tmp_file:
-#             image.save(tmp_file, format=image.format)
-#             temp_file_path = tmp_file.name
-#         return temp_file_path
-
-#     except Exception as e:
-#         print(e)
-#         raise
-    
 def generate_output(network, contract, owner, token_id, hash, info):
 
     token_id = str(token_id)
@@ -289,7 +268,6 @@ def generate_output(network, contract, owner, token_id, hash, info):
     
     scan = SCANS[network]
 
-    # message = '<a href="' + nft_image + '">&#8205;</a>'
     if info["type"] == "mint":
         title = (f"NEW {collection_name} MINT!").upper()
         message = f"\n<b>{title}</b>\n"
