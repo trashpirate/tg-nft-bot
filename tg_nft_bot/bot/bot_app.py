@@ -427,7 +427,7 @@ async def select_action(update: Update, context: CustomContext):
                     contract = r["contract"]
                     website = r["website"]
                     chats = r["chats"]
-
+                    print("Chats: " , chats)
                     chats_isAdmin = []
                     for chat in chats:
                         admins = await application.bot.get_chat_administrators(chat)
