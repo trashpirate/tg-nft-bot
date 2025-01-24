@@ -20,6 +20,7 @@ from web3 import Web3
 from tg_nft_bot.db.db_operations import (
     query_collection,
     query_collection_by_webhook,
+    query_minter_by_webhook,
 )
 
 # helpers
@@ -47,6 +48,7 @@ class ChatData:
         self.name: str = None
         self.network: str = None
         self.contract: str = None
+        self.minter: str = None
         self.website: str = None
         self.chat: int = None
         self.menu: int = None
@@ -74,6 +76,10 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
     @property
     def contract(self) -> Optional[str]:
         return self.chat_data.contract
+    
+    @property
+    def minter(self) -> Optional[str]:
+        return self.chat_data.minter
 
     @property
     def website(self) -> Optional[str]:
@@ -98,6 +104,10 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
     @contract.setter
     def contract(self, value: str) -> None:
         self.chat_data.contract = value
+    
+    @minter.setter
+    def minter(self, value: str) -> None:
+        self.chat_data.minter = value
 
     @website.setter
     def website(self, value: str) -> None:
@@ -153,7 +163,6 @@ def create_webhook_route(route):
 
 # functions
 def parse_tx(json_data):
-
     try:
         receipts = json_data["receipts"]
     except Exception:
@@ -179,8 +188,8 @@ def parse_tx(json_data):
         network = json_data["metadata"]["network"]
         webhook_id = json_data["metadata"]["stream_id"]
         logs_list = [log for receipt in receipts for log in receipt["logs"]]
-
-        logs = get_log_data(network, webhook_id, logs_list)
+        minter = query_minter_by_webhook(webhook_id)
+        logs = get_log_data(network, minter, webhook_id, logs_list)
         return logs
 
     except Exception:
@@ -191,7 +200,6 @@ def parse_tx(json_data):
 async def webhook_update(
     update: WebhookUpdate, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-
     data_list = parse_tx(update.data)
     if data_list is None or len(data_list) == 0:
         return

@@ -103,13 +103,14 @@ def is_transfer(topics: List[str]) -> bool:
         == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     )
 
-
-def is_mint(addr_from: str) -> bool:
-    return addr_from == "0x0000000000000000000000000000000000000000"
+def is_mint(addr_from: str, minter: str) -> bool:
+    print("address from: ", addr_from)
+    print("minter: ", minter)
+    return addr_from == minter
 
 
 def get_log_data(
-    network: str, webhook_id: str, logs: List[Dict[str, Any]]
+    network: str, minter: str, webhook_id: str, logs: List[Dict[str, Any]]
 ) -> Union[List[LogData], NoneType]:
 
     data: List[LogData] = []
@@ -118,7 +119,7 @@ def get_log_data(
         if is_transfer(log["topics"]):
 
             # check if mint or purchase
-            info = get_sale_info(network, log)
+            info = get_sale_info(network, minter, log)
             if info is None:
                 return None
 
@@ -137,10 +138,10 @@ def get_log_data(
     return data
 
 
-def get_sale_info(network: str, log) -> Union[SaleData, NoneType]:
+def get_sale_info(network: str, minter: str, log) -> Union[SaleData, NoneType]:
 
     addr_from = Web3.to_checksum_address("0x" + log["topics"][1][-40:])
-    if is_mint(addr_from):
+    if is_mint(addr_from, minter):
         return {
             "type": "mint",
             "price": "N/A",

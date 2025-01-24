@@ -69,7 +69,7 @@ title_message = "*CONFIG MENU*\n\n"
 
 
 # states
-MAIN, NETWORK, CONTRACT, WEBSITE, ADD_CONFIG = range(5)
+MAIN, NETWORK, CONTRACT, MINTER, WEBSITE, ADD_CONFIG = range(6)
 chat_ids = []
 network_selected = ""
 contract_address = ""
@@ -211,13 +211,11 @@ async def enter_website(update: Update, context: CustomContext):
             route = "/" + slug
             create_webhook_route(route)
 
-            hex_address = get_hex_address(context.contract)
             webhook_id = create_stream(
-                network=context.network, contract=hex_address, route=route
+                network=context.network, contract=context.contract, route=route
             )
 
-            print("Hex address: " , hex_address)
-            entry = check_if_exists(context.network, hex_address)
+            entry = check_if_exists(context.network, context.contract)
             if entry is None:
                 # TODO:
                 # check if contract exists
@@ -226,7 +224,8 @@ async def enter_website(update: Update, context: CustomContext):
                     name,
                     slug,
                     context.network,
-                    hex_address,
+                    context.contract,
+                    context.minter,
                     website,
                     webhook_id,
                     [context.chat],
@@ -234,7 +233,7 @@ async def enter_website(update: Update, context: CustomContext):
                 status = "_Collection is added._"
             else:
 
-                chats: list[str] = query_chats_by_contract(context.network, hex_address)
+                chats: list[str] = query_chats_by_contract(context.network, context.contract)
 
                 exist_count = chats.count(context.chat)
                 if exist_count == 0:
@@ -244,7 +243,8 @@ async def enter_website(update: Update, context: CustomContext):
                     name,
                     slug,
                     context.network,
-                    hex_address,
+                    context.contract,
+                    context.minter,
                     website,
                     webhook_id,
                     chats,
@@ -264,6 +264,7 @@ async def enter_website(update: Update, context: CustomContext):
             "Selected Network: *" + NETWORK_SYMBOLS[context.network] + "*\n\n"
         )
         message_text += "Contract Address: *" + context.contract + "*\n\n"
+        message_text += "Minter Address: *" + context.minter + "*\n\n"
         message_text += "Website: *" + website + "*\n\n"
         message_text += status
         reply_markup = return_menu()
@@ -277,6 +278,76 @@ async def enter_website(update: Update, context: CustomContext):
         )
         return MAIN
 
+async def enter_minter(update: Update, context: CustomContext):
+
+    query = update.callback_query
+
+    if query is not None:
+        await query.answer()
+        if query.data == "cancel":
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=cancel_message,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            return ConversationHandler.END
+
+        if query.data == "return":
+            [reply_markup, message_text] = network_menu()
+
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+
+            return CONTRACT
+
+    # process text entry
+    else:
+
+        minter = "0x0000000000000000000000000000000000000000" if update.message.text == "0" else update.message.text
+
+        user_message = update.message
+        await user_message.delete()
+
+        
+        if minter is not None and is_address(minter):
+            context.minter =  Web3.to_checksum_address(minter)
+            message_text = title_message
+            message_text += (
+                "Selected Network: *" + NETWORK_SYMBOLS[context.network] + "*\n\n"
+            )
+            message_text += "Contract Address: *" + context.contract + "*\n\n"
+            message_text += "Minter Address: *" + minter + "*\n\n"
+            message_text += "_Enter your main collection website (e.g. https://mintingsite.com, enter # to skip):_\n\n"
+            reply_markup = return_menu()
+
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                text=message_text,
+                message_id=context.menu,
+                reply_markup=reply_markup,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+
+            return WEBSITE
+
+        else:
+            message_text = title_message
+            message_text += (
+                "Selected Network: *" + NETWORK_SYMBOLS[context.network] + "*\n\n"
+            )
+            message_text += "Contract Address: *" + context.contract + "*\n\n"
+            message_text += "Minter Address: *" + minter + "*\n\n"
+            message_text += "_Please enter a valid minter address or enter '0' for regular mints:_\n\n"
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=context.menu,
+                text=message_text,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            return CONTRACT
 
 async def enter_contract(update: Update, context: CustomContext):
 
@@ -318,7 +389,7 @@ async def enter_contract(update: Update, context: CustomContext):
                 "Selected Network: *" + NETWORK_SYMBOLS[context.network] + "*\n\n"
             )
             message_text += "Contract Address: *" + contract + "*\n\n"
-            message_text += "_Enter your main collection website (e.g. https://mintingsite.com, enter # to skip):_\n\n"
+            message_text += "_Enter '0' if regular minting contract or specify minter address':_\n\n"
             reply_markup = return_menu()
 
             await context.bot.edit_message_text(
@@ -329,7 +400,7 @@ async def enter_contract(update: Update, context: CustomContext):
                 parse_mode=ParseMode.MARKDOWN,
             )
 
-            return WEBSITE
+            return MINTER
 
         else:
             message_text = title_message
@@ -337,7 +408,7 @@ async def enter_contract(update: Update, context: CustomContext):
                 "Selected Network: *" + NETWORK_SYMBOLS[context.network] + "*\n\n"
             )
             message_text += "Contract Address: *" + contract + "*\n\n"
-            message_text += "_Please enter a valid wallet address:_\n\n"
+            message_text += "_Please enter a valid contract address:_\n\n"
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
                 message_id=context.menu,
@@ -548,6 +619,7 @@ async def add_collection(update: Update, context: CustomContext):
                 collection["slug"],
                 collection["network"],
                 collection["contract"],
+                collection["minter"],
                 collection["website"],
                 collection["webhookId"],
                 chats,
@@ -748,6 +820,10 @@ async def start_app():
             CONTRACT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, enter_contract),
                 CallbackQueryHandler(enter_contract),
+            ],
+            MINTER: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, enter_minter),
+                CallbackQueryHandler(enter_minter),
             ],
             WEBSITE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, enter_website),

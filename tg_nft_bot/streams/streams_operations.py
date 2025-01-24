@@ -35,7 +35,10 @@ def qn_get(url:str, data:str={}) -> requests.Response:
 def get_streams() -> str:
     response = qn_get(qn_stream_url)
     data_json = response.json()
-    return data_json["data"]
+    if response.status_code == 200:
+        return data_json["data"]
+    else:
+        return None
 
 def check_if_stream_exists(id:str) -> bool:
     url = qn_stream_url + "/" + id
@@ -79,9 +82,15 @@ def activate_stream(id:str):
 
 
 def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, stop_block:int = -1, status = "active", url:str = qn_stream_url) -> Union[str,NoneType]:
+    print("Creating stream...")
+    print("Network: ", network)
+    print("Contract: ", contract)
+
+    hex_contract = get_hex_address(contract)
+    print("Hex Contract: ", hex_contract)
     
     stream_id = None
-    stream_name = network + "-" + Web3.to_checksum_address(contract) + "-" + route[1:]
+    stream_name = network + "-" + contract + "-" + route[1:]
     if config.env != 'production':
         stream_name += "-" + config.env
     stream_url = f"{URL}{route}"
@@ -110,7 +119,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
 
     if stream_id is None:
         try:
-            filter = get_filter(contract)
+            filter = get_filter(hex_contract)
             payload = {
                 "name": stream_name,
                 "network": network,
@@ -154,9 +163,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
 
 def create_stream(network:str, contract:str, route:str) -> Union[str,NoneType]:
     if config.env == 'local':
-        # Use local/staging-specific test block logic
-        base58_contract = Tron.to_base58check_address(Tron.to_hex_address(contract))
-        test_block = config.test_blocks[TEST_TYPE][base58_contract]
+        test_block = config.test_blocks[TEST_TYPE][contract]
         webhook_id = create_qn_stream(
             network=network,
             contract=contract,
