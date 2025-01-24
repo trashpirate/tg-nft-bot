@@ -24,7 +24,7 @@ INVALID_BASE_CONTRACT = "0xE9e5d3F02E91B8d3bc74CD7cc27d6F13bdfc0BB6"
 VALID_TRON_CONTRACT = "TDuEK3tqCn9YPFNAFd7SDypdqDisNXm1xr"
 INVALID_TRON_CONTRACT = "TRKTrqwxd1EkjfRMcocVu2CP9onVpHhbt9"
 
-BASE_MINT_BLOCK = 16929599
+BASE_MINT_BLOCK = 18455018
 TRON_MINT_BLOCK = 65927841
 
 
@@ -111,7 +111,9 @@ def test_delete_nonexistent_stream():
 
 def test_delete_stream():
     id = create_stream(
-        network=TEST_NETWORK, contract=TEST_CONTRACT, route="/test", status="paused"
+        network="base-mainnet",
+        contract="0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6",
+        route="/test",
     )
     delete_stream(id)
 

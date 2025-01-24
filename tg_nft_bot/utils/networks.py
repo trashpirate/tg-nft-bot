@@ -9,13 +9,14 @@ NETWORK_SYMBOLS = {
 }
 
 RPC = {
-    "ethereum-mainnet": "https://wild-still-yard.quiknode.pro/ac51481a54301aae02e01bc7651111bdfc0835dc/",
-    "bnbchain-mainnet": "https://clean-light-bush.bsc.quiknode.pro/8ef25fcc9b3b66c1511c0e8df2accaf49782ace0/",
-    "base-mainnet": "https://light-summer-theorem.base-mainnet.quiknode.pro/7e5ea5d963edab5820f279017f1f0aaa02395d5f/",
-    "avalanche-mainnet": "https://quick-twilight-river.avalanche-mainnet.quiknode.pro/21047f4234e2f035ad804edf6019e153efb4f2a5/ext/bc/C/rpc/",
-    "arbitrum-mainnet": "https://fluent-distinguished-research.arbitrum-mainnet.quiknode.pro/b1c4d69561c9735d4d15c5ad81ad88bb26409bea/",
-    "polygon-mainnet": "https://convincing-nameless-replica.matic.quiknode.pro/6dbf5fed1a503962f06a822716e4bb04155dcb2d/",
-    "tron-mainnet": "https://practical-wispy-log.tron-mainnet.quiknode.pro/4d841ea6709f6e456b8155894ce7c907ecb71afe/jsonrpc",
+    "ethereum-mainnet": "https://holy-crimson-uranium.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
+    "bnbchain-mainnet": "https://holy-crimson-uranium.bsc.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
+    "base-mainnet": "https://holy-crimson-uranium.base-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
+    "avalanche-mainnet": "https://holy-crimson-uranium.avalanche-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/ext/bc/C/rpc/",
+    "arbitrum-mainnet": "https://holy-crimson-uranium.arbitrum-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
+    "polygon-mainnet": "https://holy-crimson-uranium.matic.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
+    "tron-mainnet": "https://holy-crimson-uranium.tron-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7",
+    "solana-mainnet": "https://holy-crimson-uranium.solana-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7",
 }
 
 SCANS = {

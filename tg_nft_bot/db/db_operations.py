@@ -17,6 +17,7 @@ class CollectionConfigs(db.Model):
     slug = db.Column(db.String(255), nullable=True)
     network = db.Column(db.String(255), nullable=True)
     contract = db.Column(db.String(255), nullable=True)
+    minter = db.Column(db.String(255), nullable=True)
     website = db.Column(db.String(255), nullable=True)
     webhookId = db.Column(db.String(255), nullable=True)
     chats = db.Column(db.ARRAY(db.BigInteger), nullable=True)
@@ -38,6 +39,7 @@ def query_table():
                 "name": collection.name,
                 "slug": collection.slug,
                 "contract": collection.contract,
+                "minter": collection.minter,
                 "network": collection.network,
                 "website": collection.website,
                 "webhookId": collection.webhookId,
@@ -58,6 +60,7 @@ def query_collection(network, contract):
             "name": collection.name,
             "slug": collection.slug,
             "contract": collection.contract,
+            "minter": collection.minter,
             "network": collection.network,
             "website": collection.website,
             "webhookId": collection.webhookId,
@@ -74,6 +77,7 @@ def query_collection_by_webhook(webhook_id):
             "name": collection.name,
             "slug": collection.slug,
             "contract": collection.contract,
+            "minter": collection.minter,
             "network": collection.network,
             "website": collection.website,
             "webhookId": collection.webhookId,
@@ -94,6 +98,7 @@ def query_collection_by_chat(chatId):
                 "name": collection.name,
                 "slug": collection.slug,
                 "contract": collection.contract,
+                "minter": collection.minter,
                 "network": collection.network,
                 "website": collection.website,
                 "webhookId": collection.webhookId,
@@ -112,6 +117,7 @@ def query_collection_by_id(cid):
             "name": collection.name,
             "slug": collection.slug,
             "contract": collection.contract,
+            "minter": collection.minter,
             "network": collection.network,
             "website": collection.website,
             "webhookId": collection.webhookId,
@@ -153,6 +159,14 @@ def query_name_by_contract(network, contract):
     else:
         return entry.name
 
+def query_minter_by_webhook(webhook_id):
+    with flask_app.app_context():
+        entry = CollectionConfigs.query.filter_by(webhookId=webhook_id).first()
+
+    if entry is None:
+        return None
+    else:
+        return entry.minter
 
 def query_slug_by_contract(network, contract):
     with flask_app.app_context():
@@ -164,6 +178,8 @@ def query_slug_by_contract(network, contract):
         return None
     else:
         return entry.slug
+
+
 
 
 def query_chats_by_contract(network, contract):
@@ -179,8 +195,6 @@ def query_chats_by_contract(network, contract):
 
 
 def check_if_exists(network, contract):
-    print("Network: ",  network)
-    print("Contract: ", contract)
     with flask_app.app_context():
 
         entry = CollectionConfigs.query.filter_by(
@@ -204,14 +218,15 @@ def initial_config():
             db.session.commit()
 
 
-def add_config(name, slug, network, contract, website, webhook_id, chats):
+def add_config(name, slug, network, contract, minter, website, webhook_id, chats):
 
     with flask_app.app_context():
         config = CollectionConfigs(
             name=name,
             slug=slug,
             network=network,
-            contract=Web3.to_checksum_address(contract),
+            contract= contract if network == "tron-mainnet" else Web3.to_checksum_address(contract),
+            minter=minter if network == "tron-mainnet" else Web3.to_checksum_address(minter),
             website=website,
             webhookId=webhook_id,
             chats=chats,
@@ -220,7 +235,7 @@ def add_config(name, slug, network, contract, website, webhook_id, chats):
         db.session.commit()
 
 
-def update_config(name, slug, network, contract, website, webhook_id, chats):
+def update_config(name, slug, network, contract, minter, website, webhook_id, chats):
 
     with flask_app.app_context():
 
@@ -230,7 +245,8 @@ def update_config(name, slug, network, contract, website, webhook_id, chats):
         row_to_update.name = name
         row_to_update.slug = slug
         row_to_update.network = network
-        row_to_update.contract = Web3.to_checksum_address(contract)
+        row_to_update.contract = contract if network == "tron-mainnet" else Web3.to_checksum_address(contract)
+        row_to_update.minter = minter if network == "tron-mainnet" else Web3.to_checksum_address(minter)
         row_to_update.website = website
         row_to_update.webhookId = webhook_id
         row_to_update.chats = chats

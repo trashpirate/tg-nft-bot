@@ -7,11 +7,13 @@ from tg_nft_bot.utils.addresses import get_hex_address
 def get_qn_filter_code(contractAddress):
 
     address = get_hex_address(contractAddress)
-
     js_code = """
-    function main(data) {
+    function main(stream) {
         try {
-            var data = data.streamData;
+            var data = stream.data ? stream.data : stream;
+            if (data.length < data[0].length) {
+                data = stream.data[0];
+            }
             var filteredReceipts = [];
             data.forEach(receipt => {
                 let relevantLogs = receipt.logs.filter(log =>
@@ -25,7 +27,8 @@ def get_qn_filter_code(contractAddress):
                 return {
                 totalReceipts: data.length,
                 filteredCount: filteredReceipts.length,
-                receipts: filteredReceipts
+                receipts: filteredReceipts,
+                metadata: stream.metadata
                 };
             }
             
