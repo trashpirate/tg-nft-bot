@@ -1,3 +1,5 @@
+from tg_nft_bot.utils.credentials import QUICKNODE_ENDPOINT_API_KEY
+
 NETWORK_SYMBOLS = {
     "ethereum-mainnet": "ETH",
     "base-mainnet": "BASE",
@@ -9,14 +11,14 @@ NETWORK_SYMBOLS = {
 }
 
 RPC = {
-    "ethereum-mainnet": "https://holy-crimson-uranium.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
-    "bnbchain-mainnet": "https://holy-crimson-uranium.bsc.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
-    "base-mainnet": "https://holy-crimson-uranium.base-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
-    "avalanche-mainnet": "https://holy-crimson-uranium.avalanche-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/ext/bc/C/rpc/",
-    "arbitrum-mainnet": "https://holy-crimson-uranium.arbitrum-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
-    "polygon-mainnet": "https://holy-crimson-uranium.matic.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7/",
-    "tron-mainnet": "https://holy-crimson-uranium.tron-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7",
-    "solana-mainnet": "https://holy-crimson-uranium.solana-mainnet.quiknode.pro/e9591aad57b24fa4abd2e0a448442f73ddb574b7",
+    "ethereum-mainnet": "https://tame-divine-leaf.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY + "/",
+    "bnbchain-mainnet": "https://tame-divine-leaf.bsc.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY + "/",
+    "base-mainnet": "https://tame-divine-leaf.base-mainnet.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY + "/",
+    "avalanche-mainnet": "https://tame-divine-leaf.avalanche-mainnet.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY+"/ext/bc/C/rpc/",
+    "arbitrum-mainnet": "https://tame-divine-leaf.arbitrum-mainnet.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY + "/",
+    "polygon-mainnet": "https://tame-divine-leaf.matic.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY + "/",
+    "tron-mainnet": "https://tame-divine-leaf.tron-mainnet.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY,
+    "solana-mainnet": "https://tame-divine-leaf.solana-mainnet.quiknode.pro/" + QUICKNODE_ENDPOINT_API_KEY,
 }
 
 SCANS = {
