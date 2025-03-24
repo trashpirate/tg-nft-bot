@@ -28,7 +28,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 abi_json = os.path.join(current_dir, "..", "..", "assets", "NFT.json")
 
 gateways = {
-    "ipfs": ["gateway.pinata.cloud", "dweb.link", "ipfs.io", "w3s.link"],
+    "ipfs": ["ipfs.io", "dweb.link", "gateway.pinata.cloud", "w3s.link"],
     "btfs": ["gateway.btfs.io"],
 }
 
