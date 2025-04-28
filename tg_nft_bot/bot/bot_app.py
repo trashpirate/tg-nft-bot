@@ -215,6 +215,9 @@ async def enter_website(update: Update, context: CustomContext):
                 network=context.network, contract=context.contract, route=route
             )
 
+            if webhook_id is None:
+                raise Exception("Webhook creation failed.")
+
             entry = check_if_exists(context.network, context.contract)
             if entry is None:
                 # TODO:

@@ -147,6 +147,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
             }
 
             response = qn_post(url=url,payload=payload)
+            print(response)
             
             if response.status_code == 201:
                 data_json = response.json()
