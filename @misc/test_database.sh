@@ -25,7 +25,7 @@ EOF
 echo "PostgreSQL setup complete!"
 
 # sudo docker rm -f mypostgres
-# sudo docker run --name mypostgres --net host -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres
+# sudo docker run --name mypostgres --net host -e POSTGRES_PASSWORD=mysecretpassword -d -p 5433:5432 postgres
 # sudo docker exec -it mypostgres psql -U postgres
 
 # CREATE DATABASE local_test_db;

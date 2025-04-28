@@ -233,7 +233,7 @@ def get_collection_info(network, contract):
         return [name, collection]
 
 
-def get_total_supply(network, contract):
+def get_total_supply(network, contract, minter):
 
     total_supply = None
 
@@ -244,7 +244,11 @@ def get_total_supply(network, contract):
                 contract_instance = client.get_contract(contract)
                 with open(abi_json, "r") as f:
                     contract_instance.abi = json.load(f)
-                    total_supply = contract_instance.functions.totalSupply()
+                    contract_instance.abi.append(trx_abi)
+                    if(minter != w3.zero_address):
+                        total_supply = contract_instance.functions.totalSupply() - contract_instance.functions.balanceOf(minter)
+                    else:
+                        total_supply = contract_instance.functions.totalSupply()
             except Exception as e:
                 print(f"TRON: {e}")
                 raise e
@@ -255,7 +259,10 @@ def get_total_supply(network, contract):
                 with open(abi_json, "r") as f:
                     abi = json.load(f)
                     contract_instance = w3.eth.contract(address=contract, abi=abi)
-                    total_supply = contract_instance.functions.totalSupply().call()
+                    if(minter != w3.zero_address):
+                        total_supply = contract_instance.functions.totalSupply().call() - contract_instance.functions.balanceOf(minter).call()
+                    else:
+                        total_supply = contract_instance.functions.totalSupply().call()
                     return total_supply
 
             except Exception as e:

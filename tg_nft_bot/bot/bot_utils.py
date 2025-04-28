@@ -262,10 +262,11 @@ def generate_output(network, contract, owner, token_id, hash, info):
     token_id = str(token_id)
     collection = query_collection(network, contract)
 
+    minter = collection["minter"]
     collection_name = collection["name"]
     website = collection["website"]
 
-    total_supply = get_total_supply(network, contract)
+    total_supply = get_total_supply(network, contract, minter)
 
     nft_data = get_metadata(network, contract, token_id)
 
