@@ -70,9 +70,6 @@ title_message = "*CONFIG MENU*\n\n"
 
 # states
 MAIN, NETWORK, CONTRACT, MINTER, WEBSITE, ADD_CONFIG = range(6)
-chat_ids = []
-network_selected = ""
-contract_address = ""
 
 
 # keybords
@@ -214,6 +211,9 @@ async def enter_website(update: Update, context: CustomContext):
             webhook_id = create_stream(
                 network=context.network, contract=context.contract, route=route
             )
+
+            if webhook_id is None:
+                raise Exception("Webhook creation failed.")
 
             entry = check_if_exists(context.network, context.contract)
             if entry is None:

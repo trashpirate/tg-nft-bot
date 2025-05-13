@@ -9,7 +9,7 @@ test_blocks = {
         "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19515454,  # eth
         "0xE9e5d3F02E91B8d3bc74Cf7cc27d6F13bdfc0BB6": 20730026,  # multi: 16935164, single: 16929599, none: 17974345
         "TGG5FzPPXLxfsAAgYEe1LDPnat2RoVZJXf": 66054608,
-        "0x64EEd14Afa5502ca02e7Fd4f09d90831a5f6c15e": 20625531,
+        "0x64EEd14Afa5502ca02e7Fd4f09d90831a5f6c15e": 22450781,
     },
     "multi": {
         "0x49902747796C2ABcc5ea640648551DDbc2c50ba2": 19511771,

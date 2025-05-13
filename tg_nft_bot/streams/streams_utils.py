@@ -8,33 +8,38 @@ def get_qn_filter_code(contractAddress):
 
     address = get_hex_address(contractAddress)
     js_code = """
-    function main(stream) {
-        try {
-            var data = stream.data ? stream.data : stream;
-            if (data.length < data[0].length) {
-                data = stream.data[0];
-            }
-            var filteredReceipts = [];
-            data.forEach(receipt => {
-                let relevantLogs = receipt.logs.filter(log =>
-                    log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" && log.address.toLowerCase() === contractAddress.toLowerCase() && log.topics.length === 4
-                );
-                if (relevantLogs.length > 0) {
-                    filteredReceipts.push(receipt);
-                }
-            });
-            if (filteredReceipts.length > 0) {
-                return {
-                totalReceipts: data.length,
-                filteredCount: filteredReceipts.length,
-                receipts: filteredReceipts,
-                metadata: stream.metadata
-                };
-            }
-            
-        } catch (e) {
-            return {error: e.message};
+    async function main(payload) {
+    const { data, metadata } = payload;
+
+    let returnData = {};
+    try {
+        const txData = data.length < data[0].length ? data[0] : data
+        let filteredReceipts = [];
+        txData.forEach(receipt => {
+        const relevantLogs = receipt.logs.filter(
+            log =>
+            log.topics[0] ===
+            '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef' &&
+            log.address.toLowerCase() ===
+            contractAddress.toLowerCase() &&
+            log.topics.length === 4
+        );
+        if (relevantLogs.length > 0) {
+            filteredReceipts.push(receipt);
         }
+        });
+        if (filteredReceipts.length > 0) {
+        returnData = {
+            totalReceipts: txData.length,
+            filteredCount: filteredReceipts.length,
+            receipts: filteredReceipts,
+            metadata: metadata,
+        };
+        }
+    } catch (error) {
+        console.error("Error processing payload:", error.message);
+    }
+    return returnData;
     }
     """
 
