@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 import traceback
 
-from flask import Response, request
+from flask import Response, json, request
 from werkzeug.routing import Rule
 from telegram import (
     LinkPreviewOptions,
@@ -76,7 +76,7 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
     @property
     def contract(self) -> Optional[str]:
         return self.chat_data.contract
-    
+
     @property
     def minter(self) -> Optional[str]:
         return self.chat_data.minter
@@ -104,7 +104,7 @@ class CustomContext(CallbackContext[ExtBot, dict, ChatData, dict]):
     @contract.setter
     def contract(self, value: str) -> None:
         self.chat_data.contract = value
-    
+
     @minter.setter
     def minter(self, value: str) -> None:
         self.chat_data.minter = value
@@ -133,15 +133,12 @@ class WebhookUpdate:
     data: str
 
 
-class WebhookData:
-    webhook_id: str
-    contract: str
-    token_id: object
-    fromAddress: str
-    toAddress: str
-    hash: str
-    type: str
-    value: float
+@dataclass
+class ReceiptData:
+    totalReceipts: int
+    filteredCount: int
+    receipts: list[str]
+    metadata: str
 
 
 # Function to dynamically create a new webhook route
@@ -163,21 +160,28 @@ def create_webhook_route(route):
 
 # functions
 def parse_tx(json_data):
-    try:
-        receipts = json_data["receipts"]
-    except Exception:
-        try:
-            try:
-                receipts = json_data["data"]["receipts"]
-            except Exception:
-                try:
-                    receipts = json_data["data"][0]["receipts"]
-                except Exception:
-                    raise Exception("No receipts found.")
 
-        except Exception:
-            traceback.print_exc()
-            return None
+    if json_data is dict({}):
+        return None
+    try:
+
+        receipts = json_data["receipts"]
+        print("Receipts found: ", len(receipts))
+    except Exception:
+        # try:
+        #     try:
+        #         receipts = json_data["data"]["receipts"]
+        #     except Exception:
+        #         try:
+        #             receipts = json_data["data"][0]["receipts"]
+        #         except Exception:
+        #             raise Exception("No receipts found.")
+
+        # except Exception:
+        #     traceback.print_exc()
+        #     return None
+        print("No receipts found.")
+        return None
 
     if len(receipts) < 1:
         # print("No new data.")

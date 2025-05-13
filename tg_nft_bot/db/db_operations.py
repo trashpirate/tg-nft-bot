@@ -30,6 +30,7 @@ class CollectionConfigs(db.Model):
 #     name = db.Column(db.String(255), nullable=True)
 #     tgId = db.Column(db.BigInteger, nullable=True)
 
+
 def query_table():
     with flask_app.app_context():
         collections = CollectionConfigs.query.all()
@@ -159,6 +160,7 @@ def query_name_by_contract(network, contract):
     else:
         return entry.name
 
+
 def query_minter_by_webhook(webhook_id):
     with flask_app.app_context():
         entry = CollectionConfigs.query.filter_by(webhookId=webhook_id).first()
@@ -167,6 +169,7 @@ def query_minter_by_webhook(webhook_id):
         return None
     else:
         return entry.minter
+
 
 def query_slug_by_contract(network, contract):
     with flask_app.app_context():
@@ -178,8 +181,6 @@ def query_slug_by_contract(network, contract):
         return None
     else:
         return entry.slug
-
-
 
 
 def query_chats_by_contract(network, contract):
@@ -200,10 +201,11 @@ def check_if_exists(network, contract):
         entry = CollectionConfigs.query.filter_by(
             contract=contract, network=network
         ).first()
-    print("Entry: ", entry)
+
     if entry is None:
         return None
     else:
+        print("Entry: ", entry.id)
         return entry.id
 
 
@@ -225,8 +227,16 @@ def add_config(name, slug, network, contract, minter, website, webhook_id, chats
             name=name,
             slug=slug,
             network=network,
-            contract= contract if network == "tron-mainnet" else Web3.to_checksum_address(contract),
-            minter=minter if network == "tron-mainnet" else Web3.to_checksum_address(minter),
+            contract=(
+                contract
+                if network == "tron-mainnet"
+                else Web3.to_checksum_address(contract)
+            ),
+            minter=(
+                minter
+                if network == "tron-mainnet"
+                else Web3.to_checksum_address(minter)
+            ),
             website=website,
             webhookId=webhook_id,
             chats=chats,
@@ -245,8 +255,14 @@ def update_config(name, slug, network, contract, minter, website, webhook_id, ch
         row_to_update.name = name
         row_to_update.slug = slug
         row_to_update.network = network
-        row_to_update.contract = contract if network == "tron-mainnet" else Web3.to_checksum_address(contract)
-        row_to_update.minter = minter if network == "tron-mainnet" else Web3.to_checksum_address(minter)
+        row_to_update.contract = (
+            contract
+            if network == "tron-mainnet"
+            else Web3.to_checksum_address(contract)
+        )
+        row_to_update.minter = (
+            minter if network == "tron-mainnet" else Web3.to_checksum_address(minter)
+        )
         row_to_update.website = website
         row_to_update.webhookId = webhook_id
         row_to_update.chats = chats

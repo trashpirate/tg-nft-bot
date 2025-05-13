@@ -144,6 +144,7 @@ def create_qn_stream(network:str, contract:str, route:str, start_block:int = 0, 
                     "post_timeout_sec": 10,
                 },
                 "status": status,
+                "elastic_batch_enabled": False
             }
 
             response = qn_post(url=url,payload=payload)

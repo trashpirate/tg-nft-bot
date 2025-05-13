@@ -6,6 +6,7 @@ from web3 import Web3
 from tronpy import Tron
 from tronpy.abi import trx_abi
 from tronpy.providers import HTTPProvider
+from web3.constants import ADDRESS_ZERO
 
 import os
 import requests
@@ -102,6 +103,7 @@ def is_transfer(topics: List[str]) -> bool:
         and topics[0]
         == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     )
+
 
 def is_mint(addr_from: str, minter: str) -> bool:
     print("address from: ", addr_from)
@@ -245,8 +247,11 @@ def get_total_supply(network, contract, minter):
                 with open(abi_json, "r") as f:
                     contract_instance.abi = json.load(f)
                     contract_instance.abi.append(trx_abi)
-                    if(minter != w3.zero_address):
-                        total_supply = contract_instance.functions.totalSupply() - contract_instance.functions.balanceOf(minter)
+                    if minter != ADDRESS_ZERO:
+                        total_supply = (
+                            contract_instance.functions.totalSupply()
+                            - contract_instance.functions.balanceOf(minter)
+                        )
                     else:
                         total_supply = contract_instance.functions.totalSupply()
             except Exception as e:
@@ -259,11 +264,13 @@ def get_total_supply(network, contract, minter):
                 with open(abi_json, "r") as f:
                     abi = json.load(f)
                     contract_instance = w3.eth.contract(address=contract, abi=abi)
-                    if(minter != w3.zero_address):
-                        total_supply = contract_instance.functions.totalSupply().call() - contract_instance.functions.balanceOf(minter).call()
+                    if minter != ADDRESS_ZERO:
+                        total_supply = (
+                            contract_instance.functions.totalSupply().call()
+                            - contract_instance.functions.balanceOf(minter).call()
+                        )
                     else:
                         total_supply = contract_instance.functions.totalSupply().call()
-                    return total_supply
 
             except Exception as e:
                 print(f"EVM: {e}")

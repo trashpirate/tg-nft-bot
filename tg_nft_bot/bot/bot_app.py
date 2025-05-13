@@ -70,9 +70,6 @@ title_message = "*CONFIG MENU*\n\n"
 
 # states
 MAIN, NETWORK, CONTRACT, MINTER, WEBSITE, ADD_CONFIG = range(6)
-chat_ids = []
-network_selected = ""
-contract_address = ""
 
 
 # keybords
