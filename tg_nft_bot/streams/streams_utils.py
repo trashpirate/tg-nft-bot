@@ -8,7 +8,7 @@ def get_qn_filter_code(contractAddress):
 
     address = get_hex_address(contractAddress)
     js_code = """
-    async function main(payload) {
+    function main(payload) {
     const { data, metadata } = payload;
 
     let returnData = {};
